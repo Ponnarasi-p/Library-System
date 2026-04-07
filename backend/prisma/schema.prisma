@@ -1,0 +1,44 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  user_id      Int      @id @default(autoincrement())
+  email        String   @unique
+  password     String
+  role         String
+  created_at   DateTime @default(now())
+}
+
+model Book {
+  book_id          Int      @id @default(autoincrement())
+  book_title       String
+  author_name      String
+  total_copies     Int
+  available_copies Int
+  status           String
+  created_at       DateTime @default(now())
+  updated_at       DateTime @updatedAt
+  is_deleted       Boolean  @default(false)
+
+  documents        Document[] // ✅ NO fields/references here
+}
+
+model Document {
+  document_id      Int      @id @default(autoincrement())
+  reference_id     Int
+  reference_type   String
+  file_name        String
+  stored_file_name String
+  file_path        String
+  file_size_kb     Float
+  file_type        String
+  uploaded_at      DateTime @default(now())
+
+  book             Book     @relation(fields: [reference_id], references: [book_id]) // ✅ relation defined here
+}
