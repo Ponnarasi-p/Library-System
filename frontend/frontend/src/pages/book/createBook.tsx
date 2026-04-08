@@ -20,11 +20,6 @@ import {
   getBookById,
 } from "../../services/book/bookService";
 import { useNavigate, useParams } from "react-router-dom";
-import VisibilityIcon from "@mui/icons-material/Visibility";
-import EditIcon from "@mui/icons-material/Edit";
-import DeleteIcon from "@mui/icons-material/Delete";
-
-
 
 const CreateBook = () => {
   const [form, setForm] = useState<any>({
@@ -38,10 +33,11 @@ const CreateBook = () => {
   const [file, setFile] = useState<any>(null);
   const [existingImage, setExistingImage] = useState<string | null>(null);
 
-  //NEW SNACKBAR STATE
+  // ✅ UPDATED SNACKBAR (WITH SEVERITY)
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
+    severity: "success",
   });
 
   const navigate = useNavigate();
@@ -54,8 +50,7 @@ const CreateBook = () => {
 
   const fetchBook = async () => {
     try {
-      const res = await getBookById(Number(id));
-      const book = res.data.data[0];
+      const book = await getBookById(Number(id));
 
       setForm({
         book_title: book.title,
@@ -116,24 +111,30 @@ const CreateBook = () => {
 
         setSnackbar({
           open: true,
-          message: "Book updated successfully ",
+          message: "Book updated successfully",
+          severity: "success",
         });
       } else {
         await createBook(formData);
 
         setSnackbar({
           open: true,
-          message: "Book created successfully ",
+          message: "Book created successfully",
+          severity: "success",
         });
       }
 
-      // Delay navigation for UX
       setTimeout(() => {
         navigate("/books");
       }, 1200);
 
     } catch (err: any) {
-      alert(err?.response?.data?.description || "Error");
+      setSnackbar({
+        open: true,
+        message:
+          err?.response?.data?.description || "Something went wrong",
+        severity: "error", // ✅ ERROR STATE
+      });
     }
   };
 
@@ -244,15 +245,15 @@ const CreateBook = () => {
         </Stack>
       </Paper>
 
-      {/* SUCCESS SNACKBAR */}
+      {/* ✅ FINAL SNACKBAR */}
       <Snackbar
         open={snackbar.open}
-        autoHideDuration={2000}
+        autoHideDuration={3000}
         onClose={() =>
           setSnackbar({ ...snackbar, open: false })
         }
       >
-        <Alert severity="success" variant="filled">
+        <Alert severity={snackbar.severity as any} variant="filled">
           {snackbar.message}
         </Alert>
       </Snackbar>

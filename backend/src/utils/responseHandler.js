@@ -4,15 +4,15 @@ exports.successResponse = (
   res,
   statusCode,
   message,
-  description,
-  data = []
+  data = [],
+  meta = {}
 ) => {
   return res.status(statusCode).json({
     code: statusCode,
     status: "success",
     message,
-    description,
     data,
+    meta,
   });
 };
 

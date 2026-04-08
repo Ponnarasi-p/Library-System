@@ -7,5 +7,10 @@ module.exports = {
   BOOK_FETCH_SUCCESS: "book_fetch_success",
   BOOK_FETCH_BY_ID_SUCCESS: "book_fetch_by_id_success",
 
+  
+  BOOK_ALREADY_EXISTS: "book_already_exists",
+  BOOK_NOT_FOUND: "book_not_found",
+  VALIDATION_FAILED: "validation_failed",
+
   UNAUTHORIZED: "unauthorized",
 };

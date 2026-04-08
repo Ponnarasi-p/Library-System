@@ -2,11 +2,8 @@ const prisma = require("../config/prismaClient");
 const fs = require("fs");
 const path = require("path");
 
-// ===============================
-// 🔹 UPSERT BOOK (DB ONLY)
-// ===============================
+// UPSERT
 exports.upsertBook = async (id, data, fileData) => {
-  // CREATE
   if (!id) {
     const book = await prisma.book.create({ data });
 
@@ -23,13 +20,11 @@ exports.upsertBook = async (id, data, fileData) => {
     return book;
   }
 
-  // UPDATE
   const updatedBook = await prisma.book.update({
     where: { book_id: parseInt(id) },
     data,
   });
 
-  // FILE UPSERT
   if (fileData) {
     const existingDoc = await prisma.document.findFirst({
       where: {
@@ -39,15 +34,13 @@ exports.upsertBook = async (id, data, fileData) => {
     });
 
     if (existingDoc) {
-      // DELETE OLD FILE (safe)
       if (existingDoc.file_path) {
         const oldPath = path.resolve(existingDoc.file_path);
+
         if (fs.existsSync(oldPath)) {
           try {
             fs.unlinkSync(oldPath);
-          } catch (e) {
-            console.error("File delete failed:", e.message);
-          }
+          } catch {}
         }
       }
 
@@ -55,6 +48,7 @@ exports.upsertBook = async (id, data, fileData) => {
         where: { document_id: existingDoc.document_id },
         data: fileData,
       });
+
     } else {
       await prisma.document.create({
         data: {
@@ -69,40 +63,27 @@ exports.upsertBook = async (id, data, fileData) => {
   return updatedBook;
 };
 
-// ===============================
-// 🔹 FIND DUPLICATE (USED IN SERVICE)
-// ===============================
-exports.findDuplicate = async (title, author) => {
+// DUPLICATE
+exports.findDuplicate = async (data) => {
   return await prisma.book.findFirst({
     where: {
-      book_title: title,
-      author_name: author,
+      book_title: data.book_title,
       is_deleted: false,
     },
   });
 };
 
-// ===============================
-// 🔹 GET ALL BOOKS (NO LOGIC)
-// ===============================
-exports.getBooks = async (query) => {
+// ✅ GET ALL (FIXED PAGINATION)
+exports.getBooks = async (params) => {
   const where = {
     is_deleted: false,
 
-    ...(query.status && { status: query.status }),
+    ...(params.status && { status: params.status }),
 
-    ...(query.search && {
+    ...(params.search && {
       OR: [
-        {
-          book_title: {
-            contains: query.search,
-          },
-        },
-        {
-          author_name: {
-            contains: query.search,
-          },
-        },
+        { book_title: { contains: params.search } },
+        { author_name: { contains: params.search } },
       ],
     }),
   };
@@ -110,42 +91,29 @@ exports.getBooks = async (query) => {
   const [data, total] = await Promise.all([
     prisma.book.findMany({
       where,
-      skip: query.skip,
-      take: query.limit,
+      skip: params.skip,
+      take: params.take, // ✅ FIXED (IMPORTANT)
       orderBy: { book_id: "desc" },
-      include: {
-        documents: true,
-      },
+      include: { documents: true },
     }),
     prisma.book.count({ where }),
   ]);
 
-  return {
-    data,
-    total,
-    page: query.page,
-    limit: query.limit,
-  };
+  return { data, total };
 };
 
-// ===============================
-// 🔹 GET BOOK BY ID
-// ===============================
+// GET BY ID
 exports.getBookById = async (id) => {
   return await prisma.book.findFirst({
     where: {
       book_id: parseInt(id),
       is_deleted: false,
     },
-    include: {
-      documents: true,
-    },
+    include: { documents: true },
   });
 };
 
-// ===============================
-// 🔹 DELETE BOOK (SOFT DELETE)
-// ===============================
+// DELETE
 exports.deleteBook = async (id) => {
   return await prisma.book.update({
     where: { book_id: parseInt(id) },

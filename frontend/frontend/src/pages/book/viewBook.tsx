@@ -19,9 +19,9 @@ const ViewBook = () => {
   }, []);
 
   const fetchBook = async () => {
-    const res = await getBookById(Number(id));
-    setBook(res.data.data[0]);
-  };
+  const book = await getBookById(Number(id));
+  setBook(book);
+};
 
   if (!book) return <Typography>Loading...</Typography>;
 

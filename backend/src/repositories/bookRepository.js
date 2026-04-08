@@ -4,8 +4,12 @@ exports.upsertBook = async (id, data, fileData) => {
   return await bookDal.upsertBook(id, data, fileData);
 };
 
-exports.getBooks = async (query) => {
-  return await bookDal.getBooks(query);
+exports.findDuplicate = async (data) => {
+  return await bookDal.findDuplicate(data);
+};
+
+exports.getBooks = async (params) => {
+  return await bookDal.getBooks(params);
 };
 
 exports.getBookById = async (id) => {

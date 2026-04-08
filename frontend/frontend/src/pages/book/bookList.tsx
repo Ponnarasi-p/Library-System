@@ -51,18 +51,24 @@ const BookList = () => {
 
   //FETCH
   const fetchBooks = async () => {
-    try {
-      const res = await getBooks({ page, limit, search, status });
-      setBooks(res.data.data.data);
-      setTotal(res.data.data.total);
-    } catch {
-      setSnackbar({
-        open: true,
-        message: "Failed to fetch books",
-        severity: "error",
-      });
-    }
-  };
+  try {
+    const res = await getBooks({ page, limit, search, status });
+
+    console.log("API SUCCESS:", res);
+
+    setBooks(res.data);       // ✅ correct
+    setTotal(res.meta.total); // ✅ correct
+
+  } catch (err: any) {
+    console.log("API ERROR:", err);
+
+    setSnackbar({
+      open: true,
+      message: "Failed to fetch books",
+      severity: "error",
+    });
+  }
+};
 
   useEffect(() => {
     fetchBooks();
