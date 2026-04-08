@@ -9,14 +9,15 @@ exports.bookResponseDto = (book) => {
     availableCopies: book.available_copies,
     status: book.status,
 
-    coverUrl: book.cover_file
-      ? `${BASE_URL}/${book.cover_file
-          .replace("src\\", "")
-          .replace(/\\/g, "/")}`
-      : null,
+    coverUrl:
+      book.documents && book.documents.length > 0
+        ? `${BASE_URL}/${book.documents[0].file_path
+            .replace("src\\", "")
+            .replace(/\\/g, "/")}`
+        : null,
   };
 };
 
 exports.bookListDto = (books) => {
-  return books.map((book) => exports.bookResponseDto(book)); // ✅ reuse
+  return books.map((book) => exports.bookResponseDto(book));
 };

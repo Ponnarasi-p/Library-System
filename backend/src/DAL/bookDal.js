@@ -1,119 +1,154 @@
 const prisma = require("../config/prismaClient");
+const fs = require("fs");
+const path = require("path");
 
-exports.createBook = async (data, fileData) => {
-  const book = await prisma.book.create({
-    data: data,
+// ===============================
+// 🔹 UPSERT BOOK (DB ONLY)
+// ===============================
+exports.upsertBook = async (id, data, fileData) => {
+  // CREATE
+  if (!id) {
+    const book = await prisma.book.create({ data });
+
+    if (fileData) {
+      await prisma.document.create({
+        data: {
+          reference_id: book.book_id,
+          reference_type: "BOOK",
+          ...fileData,
+        },
+      });
+    }
+
+    return book;
+  }
+
+  // UPDATE
+  const updatedBook = await prisma.book.update({
+    where: { book_id: parseInt(id) },
+    data,
   });
 
-  // Save file metadata
+  // FILE UPSERT
   if (fileData) {
-    await prisma.document.create({
-      data: {
-        reference_id: book.book_id,
+    const existingDoc = await prisma.document.findFirst({
+      where: {
+        reference_id: parseInt(id),
         reference_type: "BOOK",
-        ...fileData,
       },
     });
+
+    if (existingDoc) {
+      // DELETE OLD FILE (safe)
+      if (existingDoc.file_path) {
+        const oldPath = path.resolve(existingDoc.file_path);
+        if (fs.existsSync(oldPath)) {
+          try {
+            fs.unlinkSync(oldPath);
+          } catch (e) {
+            console.error("File delete failed:", e.message);
+          }
+        }
+      }
+
+      await prisma.document.update({
+        where: { document_id: existingDoc.document_id },
+        data: fileData,
+      });
+    } else {
+      await prisma.document.create({
+        data: {
+          reference_id: parseInt(id),
+          reference_type: "BOOK",
+          ...fileData,
+        },
+      });
+    }
   }
 
-  return book;
+  return updatedBook;
 };
 
-exports.getBooks = async (query) => {
-  const page = parseInt(query.page) || 1;
-  const limit = parseInt(query.limit) || 10;
-
-  if (page <= 0 || limit <= 0) {
-    throw new Error("Invalid pagination parameters");
-  }
-
-  const skip = (page - 1) * limit;
-
-  const filters = {
-    is_deleted: false,
-  };
-
-  if (query.book_title) {
-    filters.book_title = {
-      contains: query.book_title,
-    };
-  }
-
-  if (query.author_name) {
-    filters.author_name = {
-      contains: query.author_name,
-    };
-  }
-
-  if (query.status) {
-    filters.status = query.status;
-  }
-
-  let sort = {};
-  if (query.sortBy) {
-    sort[query.sortBy] = query.order === "desc" ? "desc" : "asc";
-  }
-
-  // ✅ Fetch books
-  const books = await prisma.book.findMany({
-    where: filters,
-    skip,
-    take: limit,
-    orderBy: Object.keys(sort).length ? sort : undefined,
-  });
-
-  // ✅ Total count (🔥 FIX)
-  const total = await prisma.book.count({
-    where: filters,
-  });
-
-  // ✅ Get book IDs
-  const bookIds = books.map((b) => b.book_id);
-
-  // ✅ Fetch documents
-  const documents = await prisma.document.findMany({
+// ===============================
+// 🔹 FIND DUPLICATE (USED IN SERVICE)
+// ===============================
+exports.findDuplicate = async (title, author) => {
+  return await prisma.book.findFirst({
     where: {
-      reference_id: { in: bookIds },
-      reference_type: "BOOK",
+      book_title: title,
+      author_name: author,
+      is_deleted: false,
     },
   });
+};
 
-  // ✅ Map cover
-  const booksWithCover = books.map((book) => {
-    const doc = documents.find(
-      (d) => d.reference_id === book.book_id
-    );
+// ===============================
+// 🔹 GET ALL BOOKS (NO LOGIC)
+// ===============================
+exports.getBooks = async (query) => {
+  const where = {
+    is_deleted: false,
 
-    return {
-      ...book,
-      cover_file: doc ? doc.file_path : null,
-    };
-  });
+    ...(query.status && { status: query.status }),
+
+    ...(query.search && {
+      OR: [
+        {
+          book_title: {
+            contains: query.search,
+          },
+        },
+        {
+          author_name: {
+            contains: query.search,
+          },
+        },
+      ],
+    }),
+  };
+
+  const [data, total] = await Promise.all([
+    prisma.book.findMany({
+      where,
+      skip: query.skip,
+      take: query.limit,
+      orderBy: { book_id: "desc" },
+      include: {
+        documents: true,
+      },
+    }),
+    prisma.book.count({ where }),
+  ]);
 
   return {
+    data,
     total,
-    page,
-    limit,
-    data: booksWithCover,
+    page: query.page,
+    limit: query.limit,
   };
 };
 
+// ===============================
+// 🔹 GET BOOK BY ID
+// ===============================
 exports.getBookById = async (id) => {
-  return await prisma.book.findUnique({
-    where: { book_id: parseInt(id) }
+  return await prisma.book.findFirst({
+    where: {
+      book_id: parseInt(id),
+      is_deleted: false,
+    },
+    include: {
+      documents: true,
+    },
   });
 };
 
-exports.updateBook = async (id, data) => {
-  return await prisma.book.update({
-    where: { book_id: parseInt(id) },
-    data: data
-  });
-};
-
+// ===============================
+// 🔹 DELETE BOOK (SOFT DELETE)
+// ===============================
 exports.deleteBook = async (id) => {
   return await prisma.book.update({
     where: { book_id: parseInt(id) },
-    data: { is_deleted: true, status: "INACTIVE" }
+    data: { is_deleted: true },
   });
 };

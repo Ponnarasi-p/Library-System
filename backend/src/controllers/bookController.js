@@ -4,19 +4,26 @@ const HTTP = require("../constants/httpStatusConstants");
 const MESSAGE = require("../constants/messages");
 
 const { validateCreateBook } = require("../validators/bookCreateValidator");
+const { validateUpdateBook } = require("../validators/bookUpdateValidator");
 
 const {
   createBookRequestDto,
-  updateBookRequestDto, // ✅ ADD THIS
+  updateBookRequestDto,
 } = require("../DTO/bookRequestDto");
 
-const { validateUpdateBook } = require("../validators/bookUpdateValidator");
-// ✅ CREATE BOOK
-exports.createBook = async (req, res, next) => {
+exports.upsertBook = async (req, res, next) => {
   try {
-    validateCreateBook(req.body);
+    const id = req.params.id ? parseInt(req.params.id) : null;
 
-    const requestData = createBookRequestDto(req.body);
+    let requestData;
+
+    if (id) {
+      validateUpdateBook(req.body);
+      requestData = updateBookRequestDto(req.body);
+    } else {
+      validateCreateBook(req.body);
+      requestData = createBookRequestDto(req.body);
+    }
 
     let fileData = null;
 
@@ -30,20 +37,21 @@ exports.createBook = async (req, res, next) => {
       };
     }
 
-    await bookService.createBook(requestData, fileData);
+    const result = await bookService.upsertBook(id, requestData, fileData);
 
     return successResponse(
       res,
-      HTTP.CREATED,
-      MESSAGE.BOOK_CREATE_SUCCESS,
-      "Book created successfully"
+      id ? HTTP.OK : HTTP.CREATED,
+      id ? MESSAGE.BOOK_UPDATE_SUCCESS : MESSAGE.BOOK_CREATE_SUCCESS,
+      id ? "Book updated successfully" : "Book created successfully",
+      result
     );
   } catch (error) {
     next(error);
   }
 };
 
-// ✅ GET ALL BOOKS
+// GET ALL
 exports.getBooks = async (req, res, next) => {
   try {
     const books = await bookService.getBooks(req.query);
@@ -60,7 +68,7 @@ exports.getBooks = async (req, res, next) => {
   }
 };
 
-// ✅ GET BOOK BY ID
+// GET BY ID
 exports.getBookById = async (req, res, next) => {
   try {
     const book = await bookService.getBookById(req.params.id);
@@ -77,29 +85,7 @@ exports.getBookById = async (req, res, next) => {
   }
 };
 
-// ✅ UPDATE BOOK (🔥 FIXED)
-exports.updateBook = async (req, res, next) => {
-  try {
-    const requestData = updateBookRequestDto(req.body); // ✅ IMPORTANT FIX
-
-    const updatedBook = await bookService.updateBook(
-      req.params.id,
-      requestData
-    );
-
-    return successResponse(
-      res,
-      HTTP.OK,
-      MESSAGE.BOOK_UPDATE_SUCCESS,
-      "Book updated successfully",
-      updatedBook // optional: return updated data
-    );
-  } catch (error) {
-    next(error);
-  }
-};
-
-// ✅ DELETE BOOK
+// DELETE
 exports.deleteBook = async (req, res, next) => {
   try {
     await bookService.deleteBook(req.params.id);
@@ -109,29 +95,6 @@ exports.deleteBook = async (req, res, next) => {
       HTTP.OK,
       MESSAGE.BOOK_DELETE_SUCCESS,
       "Book deleted successfully"
-    );
-  } catch (error) {
-    next(error);
-  }
-};
-
-exports.updateBook = async (req, res, next) => {
-  try {
-    validateUpdateBook(req.body); // ✅ ADD THIS
-
-    const requestData = updateBookRequestDto(req.body);
-
-    const updatedBook = await bookService.updateBook(
-      req.params.id,
-      requestData
-    );
-
-    return successResponse(
-      res,
-      HTTP.OK,
-      MESSAGE.BOOK_UPDATE_SUCCESS,
-      "Book updated successfully",
-      updatedBook
     );
   } catch (error) {
     next(error);

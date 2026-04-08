@@ -9,7 +9,7 @@ exports.login = async (req, res, next) => {
     res.json({
       success: true,
       message: "Login successful",
-      data: result
+      data: result,
     });
   } catch (error) {
     next(error);

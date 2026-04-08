@@ -6,13 +6,21 @@ exports.login = async (email, password) => {
   const user = await authRepository.findUserByEmail(email);
 
   if (!user) {
-    throw new Error("Invalid email");
+    throw {
+      status: 400,
+      message: "invalid_email",
+      description: "Email not registered",
+    };
   }
 
   const isMatch = await bcrypt.compare(password, user.password);
 
   if (!isMatch) {
-    throw new Error("Invalid password");
+    throw {
+      status: 400,
+      message: "invalid_password",
+      description: "Incorrect password",
+    };
   }
 
   const token = generateToken(user);
@@ -21,6 +29,6 @@ exports.login = async (email, password) => {
     user_id: user.user_id,
     email: user.email,
     role: user.role,
-    token
+    token,
   };
 };

@@ -4,15 +4,34 @@ const {
   bookListDto,
 } = require("../DTO/bookDto");
 
-// ✅ CREATE BOOK
-exports.createBook = async (data, fileData) => {
-  data.total_copies = parseInt(data.total_copies);
-  data.available_copies = data.total_copies;
+exports.upsertBook = async (id, data, fileData) => {
+  // CREATE
+  if (!id) {
+    data.total_copies = parseInt(data.total_copies);
+    data.available_copies = data.total_copies;
 
-  return await bookRepository.createBook(data, fileData);
+    const book = await bookRepository.upsertBook(null, data, fileData);
+    return bookResponseDto(book);
+  }
+
+  // UPDATE
+  if (data.total_copies !== undefined) {
+    if (data.total_copies < 0) {
+      throw {
+        status: 400,
+        message: "validation_failed",
+        description: "Total copies must be greater than 0",
+      };
+    }
+
+    data.available_copies = data.total_copies;
+  }
+
+  const updatedBook = await bookRepository.upsertBook(id, data, fileData);
+  return bookResponseDto(updatedBook);
 };
 
-// ✅ GET ALL BOOKS
+// GET ALL
 exports.getBooks = async (query) => {
   const result = await bookRepository.getBooks(query);
 
@@ -22,7 +41,7 @@ exports.getBooks = async (query) => {
   };
 };
 
-// ✅ GET BOOK BY ID (🔥 FIXED WITH NOT FOUND)
+// GET BY ID
 exports.getBookById = async (id) => {
   const book = await bookRepository.getBookById(id);
 
@@ -37,27 +56,7 @@ exports.getBookById = async (id) => {
   return [bookResponseDto(book)];
 };
 
-// ✅ UPDATE BOOK (🔥 WITH BUSINESS LOGIC)
-exports.updateBook = async (id, data) => {
-  // ✅ validate total copies
-  if (data.total_copies !== undefined) {
-    if (data.total_copies < 0) {
-      throw {
-        status: 400,
-        message: "validation_failed",
-        description: "Total copies must be greater than 0",
-      };
-    }
-
-    data.available_copies = data.total_copies;
-  }
-
-  const updatedBook = await bookRepository.updateBook(id, data);
-
-  return bookResponseDto(updatedBook);
-};
-
-// ✅ DELETE BOOK
+// DELETE
 exports.deleteBook = async (id) => {
   return await bookRepository.deleteBook(id);
 };

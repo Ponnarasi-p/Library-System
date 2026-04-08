@@ -10,9 +10,9 @@ exports.successResponse = (
   return res.status(statusCode).json({
     code: statusCode,
     status: "success",
-    message: message,
-    description: description,
-    data: data,
+    message,
+    description,
+    data,
   });
 };
 
@@ -25,8 +25,8 @@ exports.errorResponse = (
   return res.status(statusCode).json({
     code: statusCode,
     status: "error",
-    message: message,
-    description: description,
+    message,
+    description,
     data: [],
   });
 };

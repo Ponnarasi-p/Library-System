@@ -6,23 +6,42 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 const upload = require("../utils/fileUpload");
 
 const {
-  createBook,
+  upsertBook,
   getBooks,
   getBookById,
-  updateBook,
-  deleteBook
+  deleteBook,
 } = require("../controllers/bookController");
 
+// CREATE
 router.post(
   "/",
   authMiddleware,
   roleMiddleware(["ADMIN"]),
-  upload.single("cover_file"), // 👈 ADD THIS
-  createBook
+  upload.single("cover_file"),
+  upsertBook
 );
+
+// GET ALL
 router.get("/", authMiddleware, getBooks);
+
+// GET BY ID
 router.get("/:id", authMiddleware, getBookById);
-router.put("/:id", authMiddleware, roleMiddleware(["ADMIN"]), updateBook);
-router.delete("/:id", authMiddleware, roleMiddleware(["ADMIN"]), deleteBook);
+
+// UPDATE
+router.put(
+  "/:id",
+  authMiddleware,
+  roleMiddleware(["ADMIN"]),
+  upload.single("cover_file"),
+  upsertBook
+);
+
+// DELETE
+router.delete(
+  "/:id",
+  authMiddleware,
+  roleMiddleware(["ADMIN"]),
+  deleteBook
+);
 
 module.exports = router;
