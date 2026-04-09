@@ -1,28 +1,17 @@
 const bookRepository = require("../repositories/bookRepository");
 const { bookResponseDto, bookListDto } = require("../DTO/bookDto");
 const { paginationDto } = require("../DTO/paginationDto");
+const { buildFileData } = require("../utils/fileBuilder");
 
 const HTTP = require("../constants/httpStatusConstants");
 const MESSAGE = require("../constants/messages");
 
-// FILE BUILDER
-const buildFileData = (file) => {
-  if (!file) return null;
-
-  return {
-    file_name: file.originalname,
-    stored_file_name: file.filename,
-    file_path: file.path,
-    file_size_kb: file.size / 1024,
-    file_type: file.mimetype,
-  };
-};
-
+// UPSERT
 exports.upsertBook = async (id, data, file) => {
   try {
     const fileData = buildFileData(file);
 
-    //  CREATE
+    // CREATE
     if (!id) {
       const duplicate = await bookRepository.findDuplicate(data);
 
@@ -65,80 +54,6 @@ exports.upsertBook = async (id, data, file) => {
     const book = await bookRepository.upsertBook(id, data, fileData);
 
     return bookResponseDto(book);
-
-  } catch (error) {
-    throw error;
-  }
-};
-
-
-// GET ALL BOOKS
-
-exports.getBooks = async (query) => {
-  try {
-    const pagination = paginationDto(query);
-
-    const result = await bookRepository.getBooks({
-      skip: pagination.skip,
-      take: pagination.take,
-      search: query.search,
-      status: query.status,
-    });
-
-    return {
-      data: bookListDto(result.data),
-      meta: {
-        total: result.total,
-        page: pagination.page,
-        limit: pagination.limit,
-      },
-    };
-
-  } catch (error) {
-    throw error;
-  }
-};
-
-
-// GET BOOK BY ID
-
-exports.getBookById = async (id) => {
-  try {
-    const book = await bookRepository.getBookById(id);
-
-    if (!book) {
-      throw {
-        status: HTTP.NOT_FOUND,
-        message: MESSAGE.BOOK_NOT_FOUND,
-        description: "Book not found",
-      };
-    }
-
-    return bookResponseDto(book);
-
-  } catch (error) {
-    throw error;
-  }
-};
-
-
-//  DELETE BOOK
-
-exports.deleteBook = async (id) => {
-  try {
-    const existing = await bookRepository.getBookById(id);
-
-    if (!existing) {
-      throw {
-        status: HTTP.NOT_FOUND,
-        message: MESSAGE.BOOK_NOT_FOUND,
-        description: "Book not found",
-      };
-    }
-
-    await bookRepository.deleteBook(id);
-
-    return true;
 
   } catch (error) {
     throw error;

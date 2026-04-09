@@ -1,13 +1,41 @@
 const bookDal = require("../DAL/bookDal");
 
+exports.upsertBook = async (id, data, fileData) => {
+  try {
+    return await bookDal.upsertBook(id, data, fileData);
+  } catch (error) {
+    throw error;
+  }
+};
 
+exports.findDuplicate = async (data) => {
+  try {
+    return await bookDal.findDuplicate(data);
+  } catch (error) {
+    throw error;
+  }
+};
 
-exports.upsertBook = (id, data, fileData) =>bookDal.upsertBook(id, data, fileData);
+exports.getBooks = async (params) => {
+  try {
+    return await bookDal.getBooks(params);
+  } catch (error) {
+    throw error;
+  }
+};
 
-exports.findDuplicate = (data) =>bookDal.findDuplicate(data);
+exports.getBookById = async (id) => {
+  try {
+    return await bookDal.getBookById(id);
+  } catch (error) {
+    throw error;
+  }
+};
 
-exports.getBooks = (params) =>bookDal.getBooks(params);
-
-exports.getBookById = (id) =>bookDal.getBookById(id);
-
-exports.deleteBook = (id) =>bookDal.deleteBook(id);
+exports.deleteBook = async (id) => {
+  try {
+    return await bookDal.deleteBook(id);
+  } catch (error) {
+    throw error;
+  }
+};
