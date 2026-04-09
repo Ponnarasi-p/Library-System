@@ -67,23 +67,23 @@ const Login = () => {
       >
         <Box display="flex" flexDirection="column" gap={2}>
           
-          {/* 🔥 TITLE */}
+          {/*  TITLE */}
           <Typography variant="h4" fontWeight={600}>
-            Welcome Back 👋
+            Welcome Back 
           </Typography>
 
           <Typography color="text.secondary">
             Login to your admin dashboard
           </Typography>
 
-          {/* 🔥 API ERROR */}
+          {/*  API ERROR */}
           {errors.api && (
             <Typography color="error" fontSize={14}>
               {errors.api}
             </Typography>
           )}
 
-          {/* 🔥 EMAIL */}
+          {/*  EMAIL */}
           <TextField
             label="Email"
             fullWidth
@@ -92,12 +92,12 @@ const Login = () => {
             onChange={(e) => {
               setForm({ ...form, email: e.target.value });
 
-              // 🔥 CLEAR EMAIL + API ERROR
+              // CLEAR EMAIL + API ERROR
               setErrors({ ...errors, email: "", api: "" });
             }}
           />
 
-          {/* 🔥 PASSWORD */}
+          {/* PASSWORD */}
           <TextField
             label="Password"
             type="password"
@@ -107,12 +107,12 @@ const Login = () => {
             onChange={(e) => {
               setForm({ ...form, password: e.target.value });
 
-              // 🔥 CLEAR PASSWORD + API ERROR
+              // CLEAR PASSWORD + API ERROR
               setErrors({ ...errors, password: "", api: "" });
             }}
           />
 
-          {/* 🔥 LOGIN BUTTON */}
+          {/* LOGIN BUTTON */}
           <Button
             variant="contained"
             fullWidth

@@ -1,111 +1,98 @@
 const prisma = require("../config/prismaClient");
-const fs = require("fs");
-const path = require("path");
 
-// ================= UPSERT =================
-exports.upsertBook = async (id, data, fileData) => {
+const LOG = require("../constants/logConstants");
+const { logInfo, logError } = require("../utils/logHelper");
+
+// UPSERT
+exports.upsertBook = async (id, data, fileData, requestId) => {
   try {
+    logInfo("upsertBookDAL", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
+
+    let result;
+
     // CREATE
     if (!id) {
-      const book = await prisma.book.create({ data });
+      result = await prisma.book.create({ data });
 
+      //  SAVE FILE
       if (fileData) {
         await prisma.document.create({
           data: {
-            reference_id: book.book_id,
+            reference_id: result.book_id,
             reference_type: "BOOK",
             ...fileData,
           },
         });
       }
 
-      return book;
-    }
-
-    // UPDATE
-    const updatedBook = await prisma.book.update({
-      where: { book_id: parseInt(id) },
-      data,
-    });
-
-    // HANDLE FILE
-    if (fileData) {
-      const existingDoc = await prisma.document.findFirst({
-        where: {
-          reference_id: parseInt(id),
-          reference_type: "BOOK",
-        },
+    } else {
+      // UPDATE
+      result = await prisma.book.update({
+        where: { book_id: parseInt(id) },
+        data,
       });
 
-      if (existingDoc) {
-        // DELETE OLD FILE SAFELY
-        if (existingDoc.file_path) {
-          const oldPath = path.resolve(existingDoc.file_path);
-
-          if (fs.existsSync(oldPath)) {
-            try {
-              fs.unlinkSync(oldPath);
-            } catch (err) {
-              console.log("File delete failed:", err);
-            }
-          }
-        }
-
-        // UPDATE DOCUMENT
-        await prisma.document.update({
-          where: { document_id: existingDoc.document_id },
-          data: fileData,
-        });
-
-      } else {
-        // CREATE DOCUMENT
-        await prisma.document.create({
-          data: {
+      // HANDLE FILE UPDATE
+      if (fileData) {
+        const existingDoc = await prisma.document.findFirst({
+          where: {
             reference_id: parseInt(id),
             reference_type: "BOOK",
-            ...fileData,
           },
         });
+
+        if (existingDoc) {
+          await prisma.document.update({
+            where: { document_id: existingDoc.document_id },
+            data: fileData,
+          });
+        } else {
+          await prisma.document.create({
+            data: {
+              reference_id: parseInt(id),
+              reference_type: "BOOK",
+              ...fileData,
+            },
+          });
+        }
       }
     }
 
-    return updatedBook;
+    logInfo("upsertBookDAL", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY);
+
+    return result;
 
   } catch (error) {
-    console.error("DAL UPSERT ERROR:", error);
+    logError("upsertBookDAL", error, requestId, LOG.TYPE.QUERY);
     throw error;
   }
 };
 
+// GET ALL
 
-// ================= DUPLICATE =================
-exports.findDuplicate = async (data) => {
+exports.getBooks = async (params, requestId) => {
   try {
-    return await prisma.book.findFirst({
-      where: {
-        book_title: data.book_title,
-        is_deleted: false,
-      },
-    });
-  } catch (error) {
-    console.error("DAL DUPLICATE ERROR:", error);
-    throw error;
-  }
-};
+    logInfo("getBooksDAL", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
 
-
-// ================= GET ALL =================
-exports.getBooks = async (params) => {
-  try {
     const where = {
       is_deleted: false,
 
-      ...(params.status && { status: params.status }),
+      ...(params.status && {
+        status: params.status,
+      }),
 
       ...(params.search && {
         OR: [
-          { book_title: { contains: params.search } },
-          { author_name: { contains: params.search } },
+          {
+            book_title: {
+              contains: params.search, 
+            },
+          },
+          {
+            author_name: {
+              contains: params.search,
+            },
+          },
         ],
       }),
     };
@@ -118,44 +105,82 @@ exports.getBooks = async (params) => {
         orderBy: { book_id: "desc" },
         include: { documents: true },
       }),
-      prisma.book.count({ where }),
+
+      prisma.book.count({
+        where,
+      }),
     ]);
+
+    logInfo("getBooksDAL", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY, {
+      records: data.length,
+    });
 
     return { data, total };
 
   } catch (error) {
-    console.error("DAL GET BOOKS ERROR:", error);
+    logError("getBooksDAL", error, requestId, LOG.TYPE.QUERY);
     throw error;
   }
 };
 
-
-// ================= GET BY ID =================
-exports.getBookById = async (id) => {
+// GET BY ID
+exports.getBookById = async (id, requestId) => {
   try {
-    return await prisma.book.findFirst({
-      where: {
-        book_id: parseInt(id),
-        is_deleted: false,
-      },
+    logInfo("getBookByIdDAL", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
+
+    const result = await prisma.book.findFirst({
+      where: { book_id: parseInt(id), is_deleted: false },
       include: { documents: true },
     });
+
+    logInfo("getBookByIdDAL", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY);
+
+    return result;
+
   } catch (error) {
-    console.error("DAL GET BY ID ERROR:", error);
+    logError("getBookByIdDAL", error, requestId, LOG.TYPE.QUERY);
     throw error;
   }
 };
 
-
-// ================= DELETE =================
-exports.deleteBook = async (id) => {
+// DELETE
+exports.deleteBook = async (id, requestId) => {
   try {
-    return await prisma.book.update({
+    logInfo("deleteBookDAL", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
+
+    const result = await prisma.book.update({
       where: { book_id: parseInt(id) },
       data: { is_deleted: true },
     });
+
+    logInfo("deleteBookDAL", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY);
+
+    return result;
+
   } catch (error) {
-    console.error("DAL DELETE ERROR:", error);
+    logError("deleteBookDAL", error, requestId, LOG.TYPE.QUERY);
+    throw error;
+  }
+};
+
+//  DUPLICATE 
+exports.findDuplicate = async (data, requestId) => {
+  try {
+    logInfo("findDuplicateDAL", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
+
+    const result = await prisma.book.findFirst({
+      where: {
+        book_title: data.book_title,
+        is_deleted: false,
+      },
+    });
+
+    logInfo("findDuplicateDAL", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY);
+
+    return result;
+
+  } catch (error) {
+    logError("findDuplicateDAL", error, requestId, LOG.TYPE.QUERY);
     throw error;
   }
 };

@@ -1,41 +1,89 @@
 const bookDal = require("../DAL/bookDal");
 
-exports.upsertBook = async (id, data, fileData) => {
+const LOG = require("../constants/logConstants");
+const { logInfo, logError } = require("../utils/logHelper");
+
+// UPSERT
+exports.upsertBook = async (id, data, fileData, requestId) => { //Same parameters passed from service
   try {
-    return await bookDal.upsertBook(id, data, fileData);
+    logInfo("upsertBookRepository", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
+
+    const result = await bookDal.upsertBook(id, data, fileData, requestId); //Calls DAL (actual DB operation)
+
+    logInfo("upsertBookRepository", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY);
+
+    return result;
+
   } catch (error) {
+    logError("upsertBookRepository", error, requestId, LOG.TYPE.QUERY);
     throw error;
   }
 };
 
-exports.findDuplicate = async (data) => {
+// DUPLICATE-same book title and not deleted.
+exports.findDuplicate = async (data, requestId) => {
   try {
-    return await bookDal.findDuplicate(data);
+    logInfo("findDuplicateRepository", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
+
+    const result = await bookDal.findDuplicate(data, requestId);
+
+    logInfo("findDuplicateRepository", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY);
+
+    return result;
+
   } catch (error) {
+    logError("findDuplicateRepository", error, requestId, LOG.TYPE.QUERY);
     throw error;
   }
 };
 
-exports.getBooks = async (params) => {
+// GET ALL
+exports.getBooks = async (params, requestId) => {
   try {
-    return await bookDal.getBooks(params);
+    logInfo("getBooksRepository", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
+
+    const result = await bookDal.getBooks(params, requestId);
+
+    logInfo("getBooksRepository", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY);
+
+    return result;
+
   } catch (error) {
+    logError("getBooksRepository", error, requestId, LOG.TYPE.QUERY);
     throw error;
   }
 };
 
-exports.getBookById = async (id) => {
+// GET BY ID
+exports.getBookById = async (id, requestId) => {
   try {
-    return await bookDal.getBookById(id);
+    logInfo("getBookByIdRepository", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
+
+    const result = await bookDal.getBookById(id, requestId);
+
+    logInfo("getBookByIdRepository", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY);
+
+    return result;
+
   } catch (error) {
+    logError("getBookByIdRepository", error, requestId, LOG.TYPE.QUERY);
     throw error;
   }
 };
 
-exports.deleteBook = async (id) => {
+// DELETE
+exports.deleteBook = async (id, requestId) => {
   try {
-    return await bookDal.deleteBook(id);
+    logInfo("deleteBookRepository", LOG.MESSAGE.START, requestId, LOG.TYPE.QUERY);
+
+    const result = await bookDal.deleteBook(id, requestId);
+
+    logInfo("deleteBookRepository", LOG.MESSAGE.END, requestId, LOG.TYPE.QUERY);
+
+    return result;
+
   } catch (error) {
+    logError("deleteBookRepository", error, requestId, LOG.TYPE.QUERY);
     throw error;
   }
 };

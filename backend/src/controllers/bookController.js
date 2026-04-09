@@ -1,34 +1,47 @@
 const bookService = require("../services/bookService");
-const { successResponse } = require("../utils/responseHandler");
-const { bookRequestDto } = require("../DTO/bookRequestDto");
-const { buildUpsertResponse } = require("../utils/controllerHelper");
+const { successResponse } = require("../utils/responseHandler");//Standard response formatter
+const { bookRequestDto } = require("../DTO/bookRequestDto");//Cleans & transforms incoming request
+const { buildUpsertResponse } = require("../utils/controllerHelper"); 
+
 const HTTP = require("../constants/httpStatusConstants");
 const MESSAGE = require("../constants/messages");
 
-// UPSERT
+const LOG = require("../constants/logConstants");
+const { logInfo, logError } = require("../utils/logHelper");
+
+//  UPSERT 
 exports.upsertBook = async (req, res, next) => {
+  const requestId = req.requestId;
+
   try {
-    const dto = bookRequestDto(req.body);
+    logInfo("upsertBookController", LOG.MESSAGE.START, requestId, LOG.TYPE.UPSERT);
 
-    const result = await bookService.upsertBook(
-      dto.id,
-      dto,
-      req.file
-    );
+    const { id, bookData } = bookRequestDto(req.body);
 
-    const { statusCode, message } = buildUpsertResponse(dto.id);
+    const result = await bookService.upsertBook(id, bookData, req.file, requestId);
+
+    const { statusCode, message } = buildUpsertResponse(id);
+
+    logInfo("upsertBookController", LOG.MESSAGE.END, requestId, LOG.TYPE.UPSERT);
 
     return successResponse(res, statusCode, message, result);
 
   } catch (error) {
+    logError("upsertBookController", error, requestId, LOG.TYPE.UPSERT);
     next(error);
   }
 };
 
-// GET ALL
+//  GET ALL 
 exports.getBooks = async (req, res, next) => {
+  const requestId = req.requestId;
+
   try {
-    const result = await bookService.getBooks(req.query);
+    logInfo("getBooksController", LOG.MESSAGE.START, requestId, LOG.TYPE.FETCH);
+
+    const result = await bookService.getBooks(req.query, requestId);
+
+    logInfo("getBooksController", LOG.MESSAGE.END, requestId, LOG.TYPE.FETCH);
 
     return successResponse(
       res,
@@ -37,15 +50,23 @@ exports.getBooks = async (req, res, next) => {
       result.data,
       result.meta
     );
+
   } catch (error) {
+    logError("getBooksController", error, requestId, LOG.TYPE.FETCH);
     next(error);
   }
 };
 
-// GET BY ID
+// GET BY ID 
 exports.getBookById = async (req, res, next) => {
+  const requestId = req.requestId;
+
   try {
-    const result = await bookService.getBookById(req.params.id);
+    logInfo("getBookByIdController", LOG.MESSAGE.START, requestId, LOG.TYPE.FETCH);
+
+    const result = await bookService.getBookById(req.params.id, requestId);
+
+    logInfo("getBookByIdController", LOG.MESSAGE.END, requestId, LOG.TYPE.FETCH);
 
     return successResponse(
       res,
@@ -53,22 +74,32 @@ exports.getBookById = async (req, res, next) => {
       MESSAGE.BOOK_FETCH_BY_ID_SUCCESS,
       result
     );
+
   } catch (error) {
+    logError("getBookByIdController", error, requestId, LOG.TYPE.FETCH);
     next(error);
   }
 };
 
-// DELETE
+// DELETE 
 exports.deleteBook = async (req, res, next) => {
+  const requestId = req.requestId;
+
   try {
-    await bookService.deleteBook(req.params.id);
+    logInfo("deleteBookController", LOG.MESSAGE.START, requestId, LOG.TYPE.DELETE);
+
+    await bookService.deleteBook(req.params.id, requestId);
+
+    logInfo("deleteBookController", LOG.MESSAGE.END, requestId, LOG.TYPE.DELETE);
 
     return successResponse(
       res,
       HTTP.OK,
       MESSAGE.BOOK_DELETE_SUCCESS
     );
+
   } catch (error) {
+    logError("deleteBookController", error, requestId, LOG.TYPE.DELETE);
     next(error);
   }
 };

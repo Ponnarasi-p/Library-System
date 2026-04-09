@@ -1,69 +1,64 @@
 const bookRepository = require("../repositories/bookRepository");
-const { bookResponseDto, bookListDto } = require("../DTO/bookDto");
+const { bookResponseDto, bookListDto } = require("../DTO/bookDto"); //Converts DB → API response
 const { paginationDto } = require("../DTO/paginationDto");
-const { buildFileData } = require("../utils/fileBuilder");
+const { buildFileData } = require("../utils/fileBuilder"); //Converts uploaded file → DB format
 
 const HTTP = require("../constants/httpStatusConstants");
 const MESSAGE = require("../constants/messages");
 
-// ================= UPSERT =================
-exports.upsertBook = async (id, data, file) => {
+const LOG = require("../constants/logConstants");
+const { logInfo, logError, logWarn } = require("../utils/logHelper");
+
+// UPSERT 
+exports.upsertBook = async (id, data, file, requestId) => {
   try {
+    logInfo("upsertBookService", LOG.MESSAGE.START, requestId, LOG.TYPE.UPSERT);
+
     const fileData = buildFileData(file);
 
-    // CREATE
     if (!id) {
-      const duplicate = await bookRepository.findDuplicate(data);
+      const duplicate = await bookRepository.findDuplicate(data, requestId);
 
       if (duplicate) {
+        logWarn("upsertBookService", "Duplicate book", requestId, LOG.TYPE.UPSERT);
         throw {
           status: HTTP.BAD_REQUEST,
           message: MESSAGE.BOOK_ALREADY_EXISTS,
-          description: "Book already exists",
         };
       }
 
       data.available_copies = data.total_copies;
     }
 
-    // UPDATE
     if (id) {
-      const existing = await bookRepository.getBookById(id);
+      const existing = await bookRepository.getBookById(id, requestId);
 
       if (!existing) {
+        logWarn("upsertBookService", "Book not found", requestId, LOG.TYPE.UPSERT);
         throw {
           status: HTTP.NOT_FOUND,
           message: MESSAGE.BOOK_NOT_FOUND,
-          description: "Book not found",
         };
-      }
-
-      if (data.book_title) {
-        const duplicate = await bookRepository.findDuplicate(data);
-
-        if (duplicate && duplicate.book_id !== parseInt(id)) {
-          throw {
-            status: HTTP.BAD_REQUEST,
-            message: MESSAGE.BOOK_ALREADY_EXISTS,
-            description: "Book already exists",
-          };
-        }
       }
     }
 
-    const book = await bookRepository.upsertBook(id, data, fileData);
+    const book = await bookRepository.upsertBook(id, data, fileData, requestId);
+
+    logInfo("upsertBookService", LOG.MESSAGE.END, requestId, LOG.TYPE.UPSERT);
 
     return bookResponseDto(book);
 
   } catch (error) {
+    logError("upsertBookService", error, requestId, LOG.TYPE.UPSERT);
     throw error;
   }
 };
 
-
-// ================= GET ALL =================
-exports.getBooks = async (query) => {
+//  GET ALL 
+exports.getBooks = async (query, requestId) => {
   try {
+    logInfo("getBooksService", LOG.MESSAGE.START, requestId, LOG.TYPE.FETCH);
+
     const pagination = paginationDto(query);
 
     const result = await bookRepository.getBooks({
@@ -71,10 +66,12 @@ exports.getBooks = async (query) => {
       take: pagination.take,
       search: query.search,
       status: query.status,
-    });
+    }, requestId);
+
+    logInfo("getBooksService", LOG.MESSAGE.END, requestId, LOG.TYPE.FETCH);
 
     return {
-      data: bookListDto(result.data),
+      data: bookListDto(result.data),  //Converts array → DTO format
       meta: {
         total: result.total,
         page: pagination.page,
@@ -83,50 +80,59 @@ exports.getBooks = async (query) => {
     };
 
   } catch (error) {
+    logError("getBooksService", error, requestId, LOG.TYPE.FETCH);
     throw error;
   }
 };
 
-
-// ================= GET BY ID =================
-exports.getBookById = async (id) => {
+//  GET BY ID 
+exports.getBookById = async (id, requestId) => {
   try {
-    const book = await bookRepository.getBookById(id);
+    logInfo("getBookByIdService", LOG.MESSAGE.START, requestId, LOG.TYPE.FETCH);
+
+    const book = await bookRepository.getBookById(id, requestId);
 
     if (!book) {
+      logWarn("getBookByIdService", "Book not found", requestId, LOG.TYPE.FETCH);
       throw {
         status: HTTP.NOT_FOUND,
         message: MESSAGE.BOOK_NOT_FOUND,
-        description: "Book not found",
       };
     }
+
+    logInfo("getBookByIdService", LOG.MESSAGE.END, requestId, LOG.TYPE.FETCH);
 
     return bookResponseDto(book);
 
   } catch (error) {
+    logError("getBookByIdService", error, requestId, LOG.TYPE.FETCH);
     throw error;
   }
 };
 
-
-// ================= DELETE =================
-exports.deleteBook = async (id) => {
+// DELETE 
+exports.deleteBook = async (id, requestId) => {
   try {
-    const existing = await bookRepository.getBookById(id);
+    logInfo("deleteBookService", LOG.MESSAGE.START, requestId, LOG.TYPE.DELETE);
+
+    const existing = await bookRepository.getBookById(id, requestId);
 
     if (!existing) {
+      logWarn("deleteBookService", "Book not found", requestId, LOG.TYPE.DELETE);
       throw {
         status: HTTP.NOT_FOUND,
         message: MESSAGE.BOOK_NOT_FOUND,
-        description: "Book not found",
       };
     }
 
-    await bookRepository.deleteBook(id);
+    await bookRepository.deleteBook(id, requestId);
+
+    logInfo("deleteBookService", LOG.MESSAGE.END, requestId, LOG.TYPE.DELETE);
 
     return true;
 
   } catch (error) {
+    logError("deleteBookService", error, requestId, LOG.TYPE.DELETE);
     throw error;
   }
 };
