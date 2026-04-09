@@ -6,8 +6,7 @@ const roleMiddleware = require("../middlewares/roleMiddleware");
 const upload = require("../utils/fileUpload");
 
 const {
-  createBook,
-  updateBook,
+  upsertBook,
   getBooks,
   getBookById,
   deleteBook
@@ -16,31 +15,26 @@ const {
 const { validateCreateBook } = require("../validators/bookCreateValidator");
 const { validateUpdateBook } = require("../validators/bookUpdateValidator");
 
-// ✅ CREATE
+//  UPSERT (CREATE + UPDATE)
 router.post(
-  "/",
+  "/upsert",
   authMiddleware,
   roleMiddleware(["ADMIN"]),
   upload.single("cover_file"),
-  validateCreateBook,
-  createBook
+  (req, res, next) => {
+    if (req.body.id) {
+      return validateUpdateBook(req, res, next);
+    }
+    return validateCreateBook(req, res, next);
+  },
+  upsertBook
 );
 
-// ✅ UPDATE
-router.put(
-  "/:id",
-  authMiddleware,
-  roleMiddleware(["ADMIN"]),
-  upload.single("cover_file"),
-  validateUpdateBook,
-  updateBook
-);
-
-// ✅ GET
+// GET
 router.get("/", authMiddleware, getBooks);
 router.get("/:id", authMiddleware, getBookById);
 
-// ✅ DELETE
+// DELETE
 router.delete(
   "/:id",
   authMiddleware,

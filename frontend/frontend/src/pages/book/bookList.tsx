@@ -1,11 +1,7 @@
 import {
   Container,
   Typography,
-  TextField,
-  MenuItem,
   Box,
-  Snackbar,
-  Alert,
   Dialog,
   DialogTitle,
   DialogContent,
@@ -18,17 +14,21 @@ import {
   Chip,
   IconButton,
   Tooltip,
-  Button,
 } from "@mui/material";
 
 import VisibilityIcon from "@mui/icons-material/Visibility";
 import EditIcon from "@mui/icons-material/Edit";
 import DeleteIcon from "@mui/icons-material/Delete";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useContext } from "react";
 import { getBooks, deleteBook } from "../../services/book/bookService";
 import { useNavigate } from "react-router-dom";
 import { DataGrid } from "@mui/x-data-grid";
+
+import CustomTextField from "../../components/ui/customTextField";
+import CustomButton from "../../components/ui/customButton";
+import { SnackbarContext } from "../../context/snackbarProvider";
+import { MenuItem } from "@mui/material";
 
 const BookList = () => {
   const [books, setBooks] = useState<any[]>([]);
@@ -38,67 +38,45 @@ const BookList = () => {
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
 
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
-
   const [deleteId, setDeleteId] = useState<number | null>(null);
 
   const limit = 5;
   const navigate = useNavigate();
 
-  //FETCH
+  const { showSnackbar } = useContext(SnackbarContext);
+
+  // FETCH
   const fetchBooks = async () => {
-  try {
-    const res = await getBooks({ page, limit, search, status });
+    try {
+      const res = await getBooks({ page, limit, search, status });
 
-    console.log("API SUCCESS:", res);
-
-    setBooks(res.data);       // ✅ correct
-    setTotal(res.meta.total); // ✅ correct
-
-  } catch (err: any) {
-    console.log("API ERROR:", err);
-
-    setSnackbar({
-      open: true,
-      message: "Failed to fetch books",
-      severity: "error",
-    });
-  }
-};
+      setBooks(res.data);
+      setTotal(res.meta.total);
+    } catch (err: any) {
+      showSnackbar("Failed to fetch books", "error");
+    }
+  };
 
   useEffect(() => {
     fetchBooks();
   }, [page, search, status]);
 
-  //DELETE
+  // DELETE
   const handleDelete = async () => {
     if (!deleteId) return;
 
     try {
       await deleteBook(deleteId);
+      showSnackbar("Book deleted successfully", "success");
       fetchBooks();
-
-      setSnackbar({
-        open: true,
-        message: "Book deleted successfully",
-        severity: "success",
-      });
     } catch {
-      setSnackbar({
-        open: true,
-        message: "Delete failed",
-        severity: "error",
-      });
+      showSnackbar("Delete failed", "error");
     }
 
     setDeleteId(null);
   };
 
-  //COLUMNS
+  // COLUMNS
   const columns = [
     { field: "title", headerName: "Title", flex: 1 },
     { field: "author", headerName: "Author", flex: 1 },
@@ -176,14 +154,16 @@ const BookList = () => {
 
         {/* FILTER */}
         <Stack direction="row" spacing={2} mb={2} alignItems="center">
-          <TextField
-            label="Search (Title / Author)"
-            value={search}
-            size="small"
-            onChange={(e) => setSearch(e.target.value)}
-          />
+          
+          <CustomTextField
+  label="Search"
+  size="small"
+  sx={{ width: 250 }}
+  value={search}
+  onChange={(e: any) => setSearch(e.target.value)}
+/>
 
-          <FormControl size="small" sx={{ minWidth: 150 }}>
+          <FormControl size="small" sx={{ minWidth: 140 }}>
             <InputLabel>Status</InputLabel>
             <Select
               value={status}
@@ -198,80 +178,51 @@ const BookList = () => {
 
           <Box flexGrow={1} />
 
-          <Button
-            variant="contained"
-            onClick={() => navigate("/books/create")}
-          >
-            + Create Book
-          </Button>
+          <CustomButton
+  onClick={() => navigate("/books/create")}
+  sx={{ width: 180 }}
+>
+  + Create Book
+</CustomButton>
         </Stack>
 
         {/* GRID */}
         <Box sx={{ height: 450 }}>
           <DataGrid
-  rows={books}
-  columns={columns}
-  getRowId={(row) => row.id}
-
-  rowCount={total} 
-
-  pagination
-  paginationMode="server" 
-
-  pageSizeOptions={[5]}
-
-  paginationModel={{
-    page: page - 1,
-    pageSize: limit,
-  }}
-
-  onPaginationModelChange={(model) => {
-    setPage(model.page + 1);
-  }}
-
-  disableRowSelectionOnClick
-
-  sx={{
-    borderRadius: 2,
-    border: "none",
-    "& .MuiDataGrid-columnHeaders": {
-      backgroundColor: "#f8f9fb",
-      fontWeight: "600",
-    },
-    "& .MuiDataGrid-row:hover": {
-      backgroundColor: "#f5f7ff",
-    },
-  }}
-/>
+            rows={books}
+            columns={columns}
+            getRowId={(row) => row.id}
+            rowCount={total}
+            pagination
+            paginationMode="server"
+            pageSizeOptions={[5]}
+            paginationModel={{
+              page: page - 1,
+              pageSize: limit,
+            }}
+            onPaginationModelChange={(model) => {
+              setPage(model.page + 1);
+            }}
+            disableRowSelectionOnClick
+          />
         </Box>
       </Paper>
 
-      {/* DELETE */}
+      {/* DELETE DIALOG */}
       <Dialog open={!!deleteId} onClose={() => setDeleteId(null)}>
         <DialogTitle>Confirm Delete</DialogTitle>
         <DialogContent>
           Are you sure you want to delete this book?
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeleteId(null)}>Cancel</Button>
-          <Button color="error" onClick={handleDelete}>
+          <CustomButton onClick={() => setDeleteId(null)}>
+            Cancel
+          </CustomButton>
+          <CustomButton color="error" onClick={handleDelete}>
             Delete
-          </Button>
+          </CustomButton>
         </DialogActions>
       </Dialog>
-
-      {/* SNACKBAR */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() =>
-          setSnackbar({ ...snackbar, open: false })
-        }
-      >
-        <Alert severity={snackbar.severity as any}>
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Container>
   );
 };

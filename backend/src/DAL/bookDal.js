@@ -2,7 +2,9 @@ const prisma = require("../config/prismaClient");
 const fs = require("fs");
 const path = require("path");
 
+
 // UPSERT
+
 exports.upsertBook = async (id, data, fileData) => {
   if (!id) {
     const book = await prisma.book.create({ data });
@@ -34,13 +36,16 @@ exports.upsertBook = async (id, data, fileData) => {
     });
 
     if (existingDoc) {
+      // SAFE FILE DELETE
       if (existingDoc.file_path) {
         const oldPath = path.resolve(existingDoc.file_path);
 
         if (fs.existsSync(oldPath)) {
           try {
             fs.unlinkSync(oldPath);
-          } catch {}
+          } catch (err) {
+            console.log("File delete failed:", err);
+          }
         }
       }
 
@@ -63,9 +68,11 @@ exports.upsertBook = async (id, data, fileData) => {
   return updatedBook;
 };
 
+
 // DUPLICATE
+
 exports.findDuplicate = async (data) => {
-  return await prisma.book.findFirst({
+  return prisma.book.findFirst({
     where: {
       book_title: data.book_title,
       is_deleted: false,
@@ -73,7 +80,9 @@ exports.findDuplicate = async (data) => {
   });
 };
 
-// ✅ GET ALL (FIXED PAGINATION)
+
+//  GET ALL
+
 exports.getBooks = async (params) => {
   const where = {
     is_deleted: false,
@@ -92,7 +101,7 @@ exports.getBooks = async (params) => {
     prisma.book.findMany({
       where,
       skip: params.skip,
-      take: params.take, // ✅ FIXED (IMPORTANT)
+      take: params.take,
       orderBy: { book_id: "desc" },
       include: { documents: true },
     }),
@@ -102,9 +111,11 @@ exports.getBooks = async (params) => {
   return { data, total };
 };
 
+
 // GET BY ID
+
 exports.getBookById = async (id) => {
-  return await prisma.book.findFirst({
+  return prisma.book.findFirst({
     where: {
       book_id: parseInt(id),
       is_deleted: false,
@@ -113,9 +124,11 @@ exports.getBookById = async (id) => {
   });
 };
 
+
 // DELETE
+
 exports.deleteBook = async (id) => {
-  return await prisma.book.update({
+  return prisma.book.update({
     where: { book_id: parseInt(id) },
     data: { is_deleted: true },
   });

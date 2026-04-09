@@ -1,9 +1,5 @@
 const bookRepository = require("../repositories/bookRepository");
 const { bookResponseDto, bookListDto } = require("../DTO/bookDto");
-const {
-  createBookRequestDto,
-  updateBookRequestDto,
-} = require("../DTO/bookRequestDto");
 const { paginationDto } = require("../DTO/paginationDto");
 
 const HTTP = require("../constants/httpStatusConstants");
@@ -22,78 +18,53 @@ const buildFileData = (file) => {
   };
 };
 
-
-// CREATE BOOK
-
-exports.createBook = async (data, file) => {
+exports.upsertBook = async (id, data, file) => {
   try {
-    const requestData = createBookRequestDto(data);
-
-    const duplicate = await bookRepository.findDuplicate(requestData);
-
-    if (duplicate) {
-      throw {
-        status: HTTP.BAD_REQUEST,
-message: MESSAGE.BOOK_ALREADY_EXISTS, // ❌ we will fix below
-        description: "Book already exists",
-      };
-    }
-
-    requestData.available_copies = requestData.total_copies;
-
     const fileData = buildFileData(file);
 
-    const book = await bookRepository.upsertBook(
-      null,
-      requestData,
-      fileData
-    );
+    //  CREATE
+    if (!id) {
+      const duplicate = await bookRepository.findDuplicate(data);
 
-    return bookResponseDto(book);
-
-  } catch (error) {
-    throw error;
-  }
-};
-
-
-// UPDATE BOOK
-
-exports.updateBook = async (id, data, file) => {
-  try {
-    const existing = await bookRepository.getBookById(id);
-
-    if (!existing) {
-      throw {
-        status: HTTP.NOT_FOUND,
-message: MESSAGE.BOOK_NOT_FOUND, // ❌ fix below
-        description: "Book not found",
-      };
-    }
-
-    const requestData = updateBookRequestDto(data);
-
-    if (requestData.book_title) {
-      const duplicate = await bookRepository.findDuplicate(requestData);
-
-      if (duplicate && duplicate.book_id !== parseInt(id)) {
+      if (duplicate) {
         throw {
           status: HTTP.BAD_REQUEST,
-          message: MESSAGE.BOOK_ALREADY_EXISTS, // ❌ fix below
+          message: MESSAGE.BOOK_ALREADY_EXISTS,
           description: "Book already exists",
         };
       }
+
+      data.available_copies = data.total_copies;
     }
 
-    const fileData = buildFileData(file);
+    // UPDATE
+    if (id) {
+      const existing = await bookRepository.getBookById(id);
 
-    const updatedBook = await bookRepository.upsertBook(
-      id,
-      requestData,
-      fileData
-    );
+      if (!existing) {
+        throw {
+          status: HTTP.NOT_FOUND,
+          message: MESSAGE.BOOK_NOT_FOUND,
+          description: "Book not found",
+        };
+      }
 
-    return bookResponseDto(updatedBook);
+      if (data.book_title) {
+        const duplicate = await bookRepository.findDuplicate(data);
+
+        if (duplicate && duplicate.book_id !== parseInt(id)) {
+          throw {
+            status: HTTP.BAD_REQUEST,
+            message: MESSAGE.BOOK_ALREADY_EXISTS,
+            description: "Book already exists",
+          };
+        }
+      }
+    }
+
+    const book = await bookRepository.upsertBook(id, data, fileData);
+
+    return bookResponseDto(book);
 
   } catch (error) {
     throw error;
@@ -138,7 +109,7 @@ exports.getBookById = async (id) => {
     if (!book) {
       throw {
         status: HTTP.NOT_FOUND,
-message: MESSAGE.BOOK_NOT_FOUND, 
+        message: MESSAGE.BOOK_NOT_FOUND,
         description: "Book not found",
       };
     }
@@ -151,7 +122,7 @@ message: MESSAGE.BOOK_NOT_FOUND,
 };
 
 
-// DELETE BOOK
+//  DELETE BOOK
 
 exports.deleteBook = async (id) => {
   try {
@@ -160,7 +131,7 @@ exports.deleteBook = async (id) => {
     if (!existing) {
       throw {
         status: HTTP.NOT_FOUND,
-message: MESSAGE.BOOK_NOT_FOUND, 
+        message: MESSAGE.BOOK_NOT_FOUND,
         description: "Book not found",
       };
     }

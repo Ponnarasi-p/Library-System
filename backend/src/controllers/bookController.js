@@ -3,15 +3,27 @@ const HTTP = require("../constants/httpStatusConstants");
 const MESSAGE = require("../constants/messages");
 const { successResponse } = require("../utils/responseHandler");
 
-// CREATE
-exports.createBook = async (req, res, next) => {
+const {
+  createBookRequestDto,
+  updateBookRequestDto,
+} = require("../DTO/bookRequestDto");
+
+
+// UPSERT CONTROLLER
+exports.upsertBook = async (req, res, next) => {
   try {
-    const result = await bookService.createBook(req.body, req.file);
+    const id = req.body.id;
+
+    const dto = id
+      ? updateBookRequestDto(req.body)
+      : createBookRequestDto(req.body);
+
+    const result = await bookService.upsertBook(id, dto, req.file);
 
     return successResponse(
       res,
-      HTTP.CREATED,
-      MESSAGE.BOOK_CREATE_SUCCESS,
+      id ? HTTP.OK : HTTP.CREATED,
+      id ? MESSAGE.BOOK_UPDATE_SUCCESS : MESSAGE.BOOK_CREATE_SUCCESS,
       result
     );
   } catch (error) {
@@ -19,25 +31,7 @@ exports.createBook = async (req, res, next) => {
   }
 };
 
-// UPDATE
-exports.updateBook = async (req, res, next) => {
-  try {
-    const result = await bookService.updateBook(
-      req.params.id,
-      req.body,
-      req.file
-    );
 
-    return successResponse(
-      res,
-      HTTP.OK,
-      MESSAGE.BOOK_UPDATE_SUCCESS,
-      result
-    );
-  } catch (error) {
-    next(error);
-  }
-};
 
 // GET ALL
 exports.getBooks = async (req, res, next) => {

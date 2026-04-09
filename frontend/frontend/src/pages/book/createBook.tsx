@@ -1,6 +1,4 @@
 import {
-  TextField,
-  Button,
   Container,
   Typography,
   Box,
@@ -10,16 +8,18 @@ import {
   FormControl,
   InputLabel,
   Select,
-  Snackbar,
-  Alert,
 } from "@mui/material";
-import { useEffect, useState } from "react";
+
+import { useEffect, useState, useContext } from "react";
 import {
-  createBook,
-  updateBook,
+  upsertBook,
   getBookById,
 } from "../../services/book/bookService";
 import { useNavigate, useParams } from "react-router-dom";
+
+import CustomTextField from "../../components/ui/customTextField";
+import CustomButton from "../../components/ui/customButton";
+import { SnackbarContext } from "../../context/snackbarProvider";
 
 const CreateBook = () => {
   const [form, setForm] = useState<any>({
@@ -33,16 +33,11 @@ const CreateBook = () => {
   const [file, setFile] = useState<any>(null);
   const [existingImage, setExistingImage] = useState<string | null>(null);
 
-  // ✅ UPDATED SNACKBAR (WITH SEVERITY)
-  const [snackbar, setSnackbar] = useState({
-    open: false,
-    message: "",
-    severity: "success",
-  });
-
   const navigate = useNavigate();
   const { id } = useParams();
   const isEdit = !!id;
+
+  const { showSnackbar } = useContext(SnackbarContext);
 
   useEffect(() => {
     if (isEdit) fetchBook();
@@ -61,7 +56,7 @@ const CreateBook = () => {
 
       setExistingImage(book.coverUrl);
     } catch {
-      console.log("Failed to fetch book");
+      showSnackbar("Failed to fetch book", "error");
     }
   };
 
@@ -104,37 +99,27 @@ const CreateBook = () => {
         formData.append(key, value as any)
       );
 
-      if (file) formData.append("cover_file", file);
-
+      // IMPORTANT FOR UPDATE
       if (isEdit) {
-        await updateBook(Number(id), formData);
-
-        setSnackbar({
-          open: true,
-          message: "Book updated successfully",
-          severity: "success",
-        });
-      } else {
-        await createBook(formData);
-
-        setSnackbar({
-          open: true,
-          message: "Book created successfully",
-          severity: "success",
-        });
+        formData.append("id", id as string);
       }
 
-      setTimeout(() => {
-        navigate("/books");
-      }, 1200);
+      if (file) formData.append("cover_file", file);
+
+      await upsertBook(formData);
+
+      showSnackbar(
+        isEdit ? "Book updated successfully" : "Book created successfully",
+        "success"
+      );
+
+      setTimeout(() => navigate("/books"), 1200);
 
     } catch (err: any) {
-      setSnackbar({
-        open: true,
-        message:
-          err?.response?.data?.description || "Something went wrong",
-        severity: "error", // ✅ ERROR STATE
-      });
+      showSnackbar(
+        err?.response?.data?.description || "Something went wrong",
+        "error"
+      );
     }
   };
 
@@ -146,36 +131,34 @@ const CreateBook = () => {
         </Typography>
 
         <Stack spacing={2}>
-          <TextField
+
+          <CustomTextField
             label="Book Title"
             value={form.book_title}
-            onChange={(e) =>
+            onChange={(e: any) =>
               handleChange("book_title", e.target.value)
             }
-            fullWidth
             error={!!errors.book_title}
             helperText={errors.book_title}
           />
 
-          <TextField
+          <CustomTextField
             label="Author Name"
             value={form.author_name}
-            onChange={(e) =>
+            onChange={(e: any) =>
               handleChange("author_name", e.target.value)
             }
-            fullWidth
             error={!!errors.author_name}
             helperText={errors.author_name}
           />
 
-          <TextField
+          <CustomTextField
             label="Total Copies"
             type="number"
             value={form.total_copies}
-            onChange={(e) =>
+            onChange={(e: any) =>
               handleChange("total_copies", e.target.value)
             }
-            fullWidth
             error={!!errors.total_copies}
             helperText={errors.total_copies}
           />
@@ -193,7 +176,6 @@ const CreateBook = () => {
               <MenuItem value="">
                 <em>Select Status</em>
               </MenuItem>
-
               <MenuItem value="ACTIVE">ACTIVE</MenuItem>
               <MenuItem value="INACTIVE">INACTIVE</MenuItem>
             </Select>
@@ -211,18 +193,19 @@ const CreateBook = () => {
                 Current Cover
               </Typography>
 
-              <img
+              <Box
+                component="img"
                 src={existingImage}
-                style={{
+                sx={{
                   width: 120,
-                  borderRadius: 8,
-                  boxShadow: "0 2px 8px rgba(0,0,0,0.2)",
+                  borderRadius: 2,
+                  boxShadow: 2,
                 }}
               />
             </Box>
           )}
 
-          <Button variant="outlined" component="label">
+          <CustomButton component="label">
             Upload Cover
             <input
               type="file"
@@ -232,31 +215,14 @@ const CreateBook = () => {
                 setExistingImage(null);
               }}
             />
-          </Button>
+          </CustomButton>
 
-          <Button
-            variant="contained"
-            size="large"
-            sx={{ mt: 1 }}
-            onClick={handleSubmit}
-          >
+          <CustomButton onClick={handleSubmit}>
             {isEdit ? "Update Book" : "Create Book"}
-          </Button>
+          </CustomButton>
+
         </Stack>
       </Paper>
-
-      {/* ✅ FINAL SNACKBAR */}
-      <Snackbar
-        open={snackbar.open}
-        autoHideDuration={3000}
-        onClose={() =>
-          setSnackbar({ ...snackbar, open: false })
-        }
-      >
-        <Alert severity={snackbar.severity as any} variant="filled">
-          {snackbar.message}
-        </Alert>
-      </Snackbar>
     </Container>
   );
 };

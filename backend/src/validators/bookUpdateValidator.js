@@ -44,5 +44,5 @@ exports.validateUpdateBook = (req, res, next) => {
     });
   }
 
-  next(); // ✅ IMPORTANT
+  next(); 
 };
