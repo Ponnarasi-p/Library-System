@@ -1,20 +1,9 @@
-import { Button } from "@mui/material"; // ✅ REQUIRED IMPORT
+import { Button } from "@mui/material";
+import type { ButtonProps } from "@mui/material";
+import { buttonStyles } from "../../constants/styles";
 
-const CustomButton = ({
-  children,
-  fullWidth = false,
-  ...props
-}: any) => {
-  return (
-    <Button
-      variant="contained"
-      size="medium"
-      fullWidth={fullWidth}
-      {...props}
-    >
-      {children}
-    </Button>
-  );
+const CustomButton = (props: ButtonProps) => {
+  return <Button variant="contained" sx={buttonStyles.primary} {...props} />;
 };
 
 export default CustomButton;

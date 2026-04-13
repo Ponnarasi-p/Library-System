@@ -12,6 +12,7 @@ import { useEffect, useState, useContext } from "react";
 import { useParams } from "react-router-dom";
 import { getBookById } from "../../services/book/bookService";
 import { SnackbarContext } from "../../context/snackbarProvider";
+import { layoutStyles, cardStyles, imageStyles } from "../../constants/styles";
 
 const ViewBook = () => {
   const { id } = useParams();
@@ -28,23 +29,16 @@ const ViewBook = () => {
     try {
       const data = await getBookById(Number(id));
       setBook(data);
-    } catch (err: any) {
+    } catch {
       showSnackbar("Failed to fetch book", "error");
     } finally {
       setLoading(false);
     }
   };
 
-  // LOADING UI
   if (loading) {
     return (
-      <Box
-        sx={{
-          display: "flex",
-          justifyContent: "center",
-          mt: 10,
-        }}
-      >
+      <Box sx={layoutStyles.pageCenter}>
         <CircularProgress />
       </Box>
     );
@@ -60,15 +54,8 @@ const ViewBook = () => {
 
   return (
     <Container maxWidth="md">
-      <Paper
-        elevation={4}
-        sx={{
-          p: 4,
-          mt: 4,
-          borderRadius: 3,
-        }}
-      >
-        <Typography variant="h4" fontWeight={600} mb={3}>
+      <Paper elevation={4} sx={cardStyles.paper}>
+        <Typography variant="h4" mb={3}>
           Book Details
         </Typography>
 
@@ -102,21 +89,14 @@ const ViewBook = () => {
             />
           </Box>
 
-          
           {book.coverUrl && (
             <Box>
               <Typography variant="subtitle2">Cover</Typography>
-
               <Box
                 component="img"
                 src={book.coverUrl}
                 alt="cover"
-                sx={{
-                  width: 200,
-                  mt: 1,
-                  borderRadius: 2,
-                  boxShadow: 3,
-                }}
+                sx={imageStyles.bookCover}
               />
             </Box>
           )}

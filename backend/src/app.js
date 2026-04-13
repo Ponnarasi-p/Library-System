@@ -1,3 +1,56 @@
+/**
+ * @module app
+ * @desc Main Express application configuration.
+ *       Sets up middleware, routes, static file serving,
+ *       and global error handling.
+ *
+ * @requires express
+ * @requires cors
+ * @requires ./routes/authRoutes
+ * @requires ./routes/bookRoutes
+ * @requires ./middlewares/errorMiddleware
+ * @requires ./middlewares/notFoundMiddleware
+ * @requires ./middlewares/loggerMiddleware
+ *
+ * @author Ponnarasi
+ * @date 2026-04-10
+ */
+
+/**
+ * @middleware CORS
+ * @desc Enables Cross-Origin Resource Sharing for frontend access
+ */
+/**
+ * @middleware bodyParser
+ * @desc Parses incoming JSON and URL-encoded request bodies
+ */
+/**
+ * @middleware loggerMiddleware
+ * @desc Logs incoming requests and responses with requestId
+ */
+
+/**
+ * @route /api/auth
+ * @desc Authentication routes (login, etc.)
+ */
+/**
+ * @route /api/books
+ * @desc Book management routes (CRUD operations)
+ */
+/**
+ * @middleware staticFiles
+ * @desc Serves uploaded files (images/documents) as static resources
+ *       Accessible via /uploads/<filename>
+ */
+/**
+ * @middleware notFoundMiddleware
+ * @desc Handles undefined routes (404)
+ */
+/**
+ * @middleware errorMiddleware
+ * @desc Global error handler for all application errors
+ */
+
 const express = require("express");
 const cors = require("cors");
 const app = express();

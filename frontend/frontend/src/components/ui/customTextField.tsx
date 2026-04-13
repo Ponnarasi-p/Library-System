@@ -1,14 +1,8 @@
 import { TextField } from "@mui/material";
+import type { TextFieldProps } from "@mui/material";
 
-const CustomTextField = (props: any) => {
-  return (
-    <TextField
-      fullWidth
-      variant="outlined"
-      size="medium"
-      {...props}
-    />
-  );
+const CustomTextField = (props: TextFieldProps) => {
+  return <TextField fullWidth variant="outlined" {...props} />;
 };
 
 export default CustomTextField;

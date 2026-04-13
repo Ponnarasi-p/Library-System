@@ -11,22 +11,20 @@ import {
 } from "@mui/material";
 
 import { useEffect, useState, useContext } from "react";
-import {
-  upsertBook,
-  getBookById,
-} from "../../services/book/bookService";
+import { upsertBook, getBookById } from "../../services/book/bookService";
 import { useNavigate, useParams } from "react-router-dom";
 
 import CustomTextField from "../../components/ui/customTextField";
 import CustomButton from "../../components/ui/customButton";
 import { SnackbarContext } from "../../context/snackbarProvider";
+import { cardStyles, imageStyles } from "../../constants/styles";
 
 const CreateBook = () => {
   const [form, setForm] = useState<any>({
     book_title: "",
     author_name: "",
     total_copies: "",
-    status: "",
+    status: "ACTIVE",
   });
 
   const [errors, setErrors] = useState<any>({});
@@ -46,14 +44,12 @@ const CreateBook = () => {
   const fetchBook = async () => {
     try {
       const book = await getBookById(Number(id));
-
       setForm({
         book_title: book.title,
         author_name: book.author,
         total_copies: book.totalCopies,
-        status: book.status || "",
+        status: book.status || "ACTIVE",
       });
-
       setExistingImage(book.coverUrl);
     } catch {
       showSnackbar("Failed to fetch book", "error");
@@ -62,28 +58,17 @@ const CreateBook = () => {
 
   const handleChange = (field: string, value: any) => {
     setForm({ ...form, [field]: value });
-
-    setErrors((prev: any) => ({
-      ...prev,
-      [field]: "",
-    }));
+    setErrors((prev: any) => ({ ...prev, [field]: "" }));
   };
 
   const validate = () => {
     let temp: any = {};
 
-    if (!form.book_title) temp.book_title = "Title is required";
-    if (!form.author_name) temp.author_name = "Author is required";
-
-    if (!form.total_copies) {
-      temp.total_copies = "Total copies is required";
-    } else if (Number(form.total_copies) <= 0) {
-      temp.total_copies = "Must be greater than 0";
-    }
-
-    if (!form.status) {
-      temp.status = "Please select status";
-    }
+    if (!form.book_title) temp.book_title = "Required";
+    if (!form.author_name) temp.author_name = "Required";
+    if (!form.total_copies || Number(form.total_copies) <= 0)
+      temp.total_copies = "Invalid";
+    if (!form.status) temp.status = "Required";
 
     setErrors(temp);
     return Object.keys(temp).length === 0;
@@ -92,46 +77,39 @@ const CreateBook = () => {
   const handleSubmit = async () => {
     if (!validate()) return;
 
+    const formData = new FormData();
+    Object.entries(form).forEach(([k, v]) =>
+      formData.append(k, v as any)
+    );
+
+    if (isEdit) formData.append("id", id as string);
+    if (file) formData.append("cover_file", file);
+
     try {
-      const formData = new FormData();
-
-      Object.entries(form).forEach(([key, value]) =>
-        formData.append(key, value as any)
-      );
-
-      // IMPORTANT FOR UPDATE
-      if (isEdit) {
-        formData.append("id", id as string);
+      console.log("FORM DATA:");
+      for (let pair of formData.entries()) {
+        console.log(pair[0], pair[1]);
       }
-
-      if (file) formData.append("cover_file", file);
 
       await upsertBook(formData);
 
-      showSnackbar(
-        isEdit ? "Book updated successfully" : "Book created successfully",
-        "success"
-      );
-
-      setTimeout(() => navigate("/books"), 1200);
+      showSnackbar(isEdit ? "Updated" : "Created", "success");
+      navigate("/books");
 
     } catch (err: any) {
-      showSnackbar(
-        err?.response?.data?.description || "Something went wrong",
-        "error"
-      );
+      console.log("ERROR:", err.response?.data);
+      showSnackbar(err.response?.data?.description || "Failed", "error");
     }
   };
 
   return (
     <Container maxWidth="sm">
-      <Paper elevation={4} sx={{ p: 4, mt: 5, borderRadius: 3 }}>
-        <Typography variant="h4" fontWeight={600} mb={3}>
+      <Paper elevation={4} sx={cardStyles.paper}>
+        <Typography variant="h4" mb={3}>
           {isEdit ? "Edit Book" : "Create Book"}
         </Typography>
 
         <Stack spacing={2}>
-
           <CustomTextField
             label="Book Title"
             value={form.book_title}
@@ -143,7 +121,7 @@ const CreateBook = () => {
           />
 
           <CustomTextField
-            label="Author Name"
+            label="Author"
             value={form.author_name}
             onChange={(e: any) =>
               handleChange("author_name", e.target.value)
@@ -153,7 +131,7 @@ const CreateBook = () => {
           />
 
           <CustomTextField
-            label="Total Copies"
+            label="Copies"
             type="number"
             value={form.total_copies}
             onChange={(e: any) =>
@@ -163,9 +141,8 @@ const CreateBook = () => {
             helperText={errors.total_copies}
           />
 
-          <FormControl fullWidth error={!!errors.status}>
+          <FormControl error={!!errors.status}>
             <InputLabel>Status</InputLabel>
-
             <Select
               value={form.status}
               label="Status"
@@ -173,54 +150,31 @@ const CreateBook = () => {
                 handleChange("status", e.target.value)
               }
             >
-              <MenuItem value="">
-                <em>Select Status</em>
-              </MenuItem>
               <MenuItem value="ACTIVE">ACTIVE</MenuItem>
               <MenuItem value="INACTIVE">INACTIVE</MenuItem>
             </Select>
-
-            {errors.status && (
-              <Typography variant="caption" color="error">
-                {errors.status}
-              </Typography>
-            )}
           </FormControl>
 
           {existingImage && (
-            <Box>
-              <Typography variant="body2" mb={1}>
-                Current Cover
-              </Typography>
-
-              <Box
-                component="img"
-                src={existingImage}
-                sx={{
-                  width: 120,
-                  borderRadius: 2,
-                  boxShadow: 2,
-                }}
-              />
-            </Box>
+            <Box
+              component="img"
+              src={existingImage}
+              sx={imageStyles.bookCover}
+            />
           )}
 
           <CustomButton component="label">
             Upload Cover
             <input
-              type="file"
               hidden
-              onChange={(e: any) => {
-                setFile(e.target.files[0]);
-                setExistingImage(null);
-              }}
+              type="file"
+              onChange={(e: any) => setFile(e.target.files[0])}
             />
           </CustomButton>
 
           <CustomButton onClick={handleSubmit}>
-            {isEdit ? "Update Book" : "Create Book"}
+            {isEdit ? "Update" : "Create"}
           </CustomButton>
-
         </Stack>
       </Paper>
     </Container>
