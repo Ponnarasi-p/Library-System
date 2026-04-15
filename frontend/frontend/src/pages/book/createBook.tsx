@@ -14,8 +14,8 @@ import { useEffect, useState, useContext } from "react";
 import { upsertBook, getBookById } from "../../services/book/bookService";
 import { useNavigate, useParams } from "react-router-dom";
 
-import CustomTextField from "../../components/ui/customTextField";
-import CustomButton from "../../components/ui/customButton";
+import CustomTextField from "../../components/ui/CustomTextField";
+import CustomButton from "../../components/ui/CustomButton";
 import { SnackbarContext } from "../../context/snackbarProvider";
 import { cardStyles, imageStyles } from "../../constants/styles";
 

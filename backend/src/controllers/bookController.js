@@ -1,231 +1,105 @@
-/**
- * @module bookController
- * @desc Handles all book-related HTTP requests such as create, update,
- *       fetch, and delete operations.
- *
- * @requires ../services/bookService
- * @requires ../utils/responseHandler
- * @requires ../DTO/bookRequestDto
- * @requires ../constants/httpStatusConstants
- * @requires ../constants/messages
- * @requires ../constants/logConstants
- * @requires ../utils/logHelper
- *
- * @author Ponnarasi
- * @date 2026-04-10
- */
+import bookService from '../services/bookService.js';
+import { successResponse } from '../utils/responseHandler.js';
+import BookRequestDto from '../DTO/bookRequestDto.js';
+import { bookListDto, bookResponseDto } from '../DTO/bookDto.js';
 
-/**
- * @function upsertBook
- * @desc Creates a new book or updates an existing book
- * @access Public
- *
- * @param {Object} req - Express request object
- * @param {Object} req.body - Request body containing book details
- * @param {Object} req.file - Uploaded file (book cover/document)
- * @param {string} req.requestId - Unique request identifier for logging
- *
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- *
- * @returns {Promise<void>}
- *
- * @throws {Error} If book creation or update fails
- */
+import HTTP from '../constants/httpStatusConstants.js';
+import MESSAGE from '../constants/messages.js';
+import { SYSTEM_CONSTANTS } from '../constants/systemConstant.js';
 
-/**
- * @function getBooks
- * @desc Fetches a paginated list of books with optional filters
- * @access Public
- *
- * @param {Object} req - Express request object
- * @param {Object} req.query - Query parameters
- * @param {number} [req.query.page] - Page number for pagination
- * @param {number} [req.query.limit] - Number of records per page
- * @param {string} [req.query.search] - Search keyword
- * @param {string} [req.query.status] - Filter by book status
- * @param {string} req.requestId - Unique request identifier
- *
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- *
- * @returns {Promise<void>}
- *
- * @throws {Error} If fetching books fails
- */
+class BookController {
 
-/**
- * @function getBookById
- * @desc Fetches a single book by its ID
- * @access Public
- *
- * @param {Object} req - Express request object
- * @param {Object} req.params - Route parameters
- * @param {number|string} req.params.id - Book ID
- * @param {string} req.requestId - Unique request identifier
- *
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- *
- * @returns {Promise<void>}
- *
- * @throws {Error} If book is not found or fetch fails
- */
+  upsertBook = async (req, res, next) => {
+    try {
+      const dto = new BookRequestDto(req.body);
 
+      const result = await bookService.upsertBook(
+        dto.id,
+        dto.bookData,
+        req.file,
+        req.requestId
+      );
 
+      return successResponse(
+        res,
+        result.statusCode,
+        result.message,
+        result.data
+      );
+    } catch (error) {
+      return next(error);
+    }
+  };
 
-/**
- * @function deleteBook
- * @desc Deletes a book by its ID
- * @access Public
- *
- * @param {Object} req - Express request object
- * @param {Object} req.params - Route parameters
- * @param {number|string} req.params.id - Book ID
- * @param {string} req.requestId - Unique request identifier
- *
- * @param {Object} res - Express response object
- * @param {Function} next - Express next middleware function
- *
- * @returns {Promise<void>}
- *
- * @throws {Error} If deletion fails
- *
- * */
+  getBooks = async (req, res, next) => {
+    try {
+      const page = parseInt(req.query.page) || SYSTEM_CONSTANTS.DEFAULT_PAGE;
+      const limit = parseInt(req.query.limit) || SYSTEM_CONSTANTS.PAGINATION;
 
+      const pagination = {
+        skip: (page - 1) * limit,
+        take: limit,
+        page,
+        limit,
+      };
 
+      const filters = {
+        search: req.query.search,
+        status: req.query.status,
+      };
 
-const bookService = require("../services/bookService");
-const { successResponse } = require("../utils/responseHandler");
-const { bookRequestDto } = require("../DTO/bookRequestDto");
+      const result = await bookService.getBooks(
+        pagination,
+        filters,
+        req.requestId
+      );
 
-const HTTP = require("../constants/httpStatusConstants");
-const MESSAGE = require("../constants/messages");
+      return successResponse(
+        res,
+        HTTP.OK,
+        MESSAGE.BOOK_FETCH_SUCCESS,
+        bookListDto(result.data),
+        result.meta
+      );
+    } catch (error) {
+      return next(error);
+    }
+  };
 
-const LOG = require("../constants/logConstants");
-const { logInfo, logError } = require("../utils/logHelper");
+  getBookById = async (req, res, next) => {
+    try {
+      const result = await bookService.getBookById(
+        req.params.id,
+        req.requestId
+      );
 
-//  UPSERT 
-exports.upsertBook = async (req, res, next) => {
-  const requestId = req.requestId;
+      return successResponse(
+        res,
+        HTTP.OK,
+        MESSAGE.BOOK_FETCH_BY_ID_SUCCESS,
+        bookResponseDto(result)
+      );
+    } catch (error) {
+      return next(error);
+    }
+  };
 
-  try {
-    logInfo("upsertBookController", LOG.MESSAGE.START, requestId, LOG.TYPE.UPSERT);
+  deleteBook = async (req, res, next) => {
+    try {
+      await bookService.deleteBook(
+        req.params.id,
+        req.requestId
+      );
 
-    const { id, bookData } = bookRequestDto(req.body);
+      return successResponse(
+        res,
+        HTTP.OK,
+        MESSAGE.BOOK_DELETE_SUCCESS
+      );
+    } catch (error) {
+      return next(error);
+    }
+  };
+}
 
-    const result = await bookService.upsertBook(
-      id,
-      bookData,
-      req.file,
-      requestId
-    );
-
-    logInfo("upsertBookController", LOG.MESSAGE.END, requestId, LOG.TYPE.UPSERT);
-
-    return successResponse(
-      res,
-      result.statusCode,
-      result.message,
-      result.data 
-    );
-
-  } catch (error) {
-    logError("upsertBookController", error, requestId, LOG.TYPE.UPSERT);
-    next(error);
-  }
-};
-
-//  GET ALL 
-//  GET ALL 
-exports.getBooks = async (req, res, next) => {
-  const requestId = req.requestId;
-
-  try {
-    logInfo("getBooksController", LOG.MESSAGE.START, requestId, LOG.TYPE.FETCH);
-
-    // PAGINATION 
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 5;
-
-    const pagination = {
-      skip: (page - 1) * limit,
-      take: limit,
-      page,
-      limit,
-    };
-
-    //  FILTERS
-    const filters = {
-      search: req.query.search,
-      status: req.query.status,
-    };
-
-    const result = await bookService.getBooks(
-      pagination,
-      filters,
-      requestId
-    );
-
-    logInfo("getBooksController", LOG.MESSAGE.END, requestId, LOG.TYPE.FETCH);
-
-    return successResponse(
-      res,
-      HTTP.OK,
-      MESSAGE.BOOK_FETCH_SUCCESS,
-      result.data,
-      result.meta
-    );
-
-  } catch (error) {
-    logError("getBooksController", error, requestId, LOG.TYPE.FETCH);
-    next(error);
-  }
-};
-
-//  GET BY ID 
-exports.getBookById = async (req, res, next) => {
-  const requestId = req.requestId;
-
-  try {
-    logInfo("getBookByIdController", LOG.MESSAGE.START, requestId, LOG.TYPE.FETCH);
-
-    const result = await bookService.getBookById(req.params.id, requestId);
-
-    logInfo("getBookByIdController", LOG.MESSAGE.END, requestId, LOG.TYPE.FETCH);
-
-    return successResponse(
-      res,
-      HTTP.OK,
-      MESSAGE.BOOK_FETCH_BY_ID_SUCCESS,
-      result 
-    );
-
-  } catch (error) {
-    logError("getBookByIdController", error, requestId, LOG.TYPE.FETCH);
-    next(error);
-  }
-};
-
-//  DELETE
-exports.deleteBook = async (req, res, next) => {
-  const requestId = req.requestId;
-
-  try {
-    logInfo("deleteBookController", LOG.MESSAGE.START, requestId, LOG.TYPE.DELETE);
-
-    await bookService.deleteBook(req.params.id, requestId);
-
-    logInfo("deleteBookController", LOG.MESSAGE.END, requestId, LOG.TYPE.DELETE);
-
-    return successResponse(
-      res,
-      HTTP.OK,
-      MESSAGE.BOOK_DELETE_SUCCESS
-    );
-
-  } catch (error) {
-    logError("deleteBookController", error, requestId, LOG.TYPE.DELETE);
-    next(error);
-  }
-};
+export default new BookController();

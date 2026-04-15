@@ -1,106 +1,52 @@
-/**
- * @module bookRoutes
- * @desc Defines all book-related API routes including create/update,
- *       fetch, and delete operations. Applies authentication,
- *       authorization, validation, and file upload middleware.
- *
- * @requires express
- * @requires ../middlewares/authMiddleware
- * @requires ../middlewares/roleMiddleware
- * @requires ../utils/fileUpload
- * @requires ../middlewares/validationMiddleware
- * @requires ../validators/bookValidator
- * @requires ../controllers/bookController
- *
- * @author Ponnarasi
- * @date 2026-04-10
- */
-/**
- * @constant router
- * @type {import('express').Router}
- * @desc Express router instance for book routes
- */
-/**
- * @route POST /upsert
- * @desc Create a new book or update an existing book
- * @access Protected (ADMIN only)
- *
- * @middleware authMiddleware - Validates JWT token
- * @middleware roleMiddleware(["ADMIN"]) - Restricts access to admin users
- * @middleware upload.single("cover_file") - Handles file upload
- * @middleware bookCreateValidator - Validates request body
- * @middleware validate - Handles validation errors
- */
-/**
- * @route GET /
- * @desc Fetch all books with pagination and filters
- * @access Protected
- *
- * @middleware authMiddleware - Validates JWT token
- */
+import express from 'express';
 
-/**
- * @route GET /:id
- * @desc Fetch a single book by ID
- * @access Protected
- *
- * @middleware authMiddleware - Validates JWT token
- */
-
-/**
- * @route DELETE /:id
- * @desc Soft delete a book by ID
- * @access Protected (ADMIN only)
- *
- * @middleware authMiddleware - Validates JWT token
- * @middleware roleMiddleware(["ADMIN"]) - Restricts access to admin users
- */
-
-const express = require("express");
 const router = express.Router();
 
-const authMiddleware = require("../middlewares/authMiddleware");
-const roleMiddleware = require("../middlewares/roleMiddleware");
-const upload = require("../utils/fileUpload");
-const validate = require("../middlewares/validationMiddleware");
-const {
-  bookCreateValidator,
-} = require("../validators/bookValidator");
+import authMiddleware from '../middlewares/authMiddleware.js';
+import roleMiddleware from '../middlewares/roleMiddleware.js';
+import upload from '../utils/fileUpload.js';
+import validate from '../middlewares/validationMiddleware.js';
+import bookValidatorSelector from '../middlewares/bookValidatorSelector.js';
 
+import bookController from '../controllers/bookController.js';
+
+//
 const {
   upsertBook,
   getBooks,
   getBookById,
-  deleteBook
-} = require("../controllers/bookController");
+  deleteBook,
+} = bookController;
 
 
-//  UPSERT (CREATE + UPDATE)
-
+//  UPSERT (CREATE / UPDATE)
 router.post(
-  "/upsert",
+  '/upsert',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
-  upload.single("cover_file"),
-
-  // APPLY VALIDATORS
- bookCreateValidator,
-
-  validate, 
-
+  roleMiddleware(['ADMIN']),
+  upload.single('cover_file'),
+  bookValidatorSelector,
+  validate,
   upsertBook
 );
 
-// GET
-router.get("/", authMiddleware, getBooks);
-router.get("/:id", authMiddleware, getBookById);
 
-// DELETE
+// GET ALL BOOKS
+router.get('/', authMiddleware, getBooks);
+
+
+// GET BOOK BY ID
+router.get('/:id', authMiddleware, getBookById);
+
+
+// DELETE BOOK
 router.delete(
-  "/:id",
+  '/:id',
   authMiddleware,
-  roleMiddleware(["ADMIN"]),
+  roleMiddleware(['ADMIN']),
   deleteBook
 );
 
-module.exports = router;
+
+// ✅ ES6 export
+export default router;

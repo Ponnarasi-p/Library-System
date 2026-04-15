@@ -31,23 +31,25 @@
  */
 
 
-module.exports = {
+const LOG = {
   LEVEL: {
-    INFO: "info",
-    ERROR: "error",
-    WARN: "warn",
+    INFO: 'info',
+    ERROR: 'error',
+    WARN: 'warn',
   },
 
   MESSAGE: {
-    START: "START",
-    END: "END",
-    ERROR: "ERROR",
+    START: 'START',
+    END: 'END',
+    ERROR: 'ERROR',
   },
 
   TYPE: {
-    FETCH: "FETCH",
-    UPSERT: "UPSERT",
-    DELETE: "DELETE",
-    QUERY: "QUERY",
+    FETCH: 'FETCH',
+    UPSERT: 'UPSERT',
+    DELETE: 'DELETE',
+    QUERY: 'QUERY',
   },
 };
+
+export default LOG;

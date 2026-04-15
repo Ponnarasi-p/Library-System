@@ -28,19 +28,20 @@
  * @property {string} UNAUTHORIZED - Unauthorized access attempt
  */
 
-module.exports = {
-  LOGIN_SUCCESS: "login_success",
+const MESSAGE = {
+  LOGIN_SUCCESS: 'login_success',
 
-  BOOK_CREATE_SUCCESS: "book_create_success",
-  BOOK_UPDATE_SUCCESS: "book_update_success",
-  BOOK_DELETE_SUCCESS: "book_delete_success",
-  BOOK_FETCH_SUCCESS: "book_fetch_success",
-  BOOK_FETCH_BY_ID_SUCCESS: "book_fetch_by_id_success",
+  BOOK_CREATE_SUCCESS: 'book_create_success',
+  BOOK_UPDATE_SUCCESS: 'book_update_success',
+  BOOK_DELETE_SUCCESS: 'book_delete_success',
+  BOOK_FETCH_SUCCESS: 'book_fetch_success',
+  BOOK_FETCH_BY_ID_SUCCESS: 'book_fetch_by_id_success',
 
-  
-  BOOK_ALREADY_EXISTS: "book_already_exists",
-  BOOK_NOT_FOUND: "book_not_found",
-  VALIDATION_FAILED: "validation_failed",
+  BOOK_ALREADY_EXISTS: 'book_already_exists',
+  BOOK_NOT_FOUND: 'book_not_found',
+  VALIDATION_FAILED: 'validation_failed',
 
-  UNAUTHORIZED: "unauthorized",
+  UNAUTHORIZED: 'unauthorized',
 };
+
+export default MESSAGE;

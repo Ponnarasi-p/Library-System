@@ -3,8 +3,8 @@ import { useState, useContext } from "react";
 import { loginApi } from "../../services/auth/authService";
 import { AuthContext } from "../../context/authProvider";
 import { useNavigate } from "react-router-dom";
-import CustomTextField from "../../components/ui/customTextField";
-import CustomButton from "../../components/ui/customButton";
+import CustomTextField from "../../components/ui/CustomTextField";
+import CustomButton from "../../components/ui/CustomButton";
 
 const Login = () => {
   const [form, setForm] = useState({ email: "", password: "" });

@@ -16,7 +16,9 @@
  * @property {string} USER - Represents regular users with limited access
  */
 
-module.exports = {
-  ADMIN: "ADMIN",
-  USER: "USER"
+const ROLES = {
+  ADMIN: 'ADMIN',
+  USER: 'USER',
 };
+
+export default ROLES;

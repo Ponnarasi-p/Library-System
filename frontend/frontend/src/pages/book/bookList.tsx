@@ -26,8 +26,8 @@ import { getBooks, deleteBook } from "../../services/book/bookService";
 import { useNavigate } from "react-router-dom";
 import { DataGrid } from "@mui/x-data-grid";
 
-import CustomTextField from "../../components/ui/customTextField";
-import CustomButton from "../../components/ui/customButton";
+import CustomTextField from "../../components/ui/CustomTextField";
+import CustomButton from "../../components/ui/CustomButton";
 import { SnackbarContext } from "../../context/snackbarProvider";
 import {
   cardStyles,
