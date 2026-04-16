@@ -110,7 +110,38 @@ class BookRepository {
       data: { is_deleted: true },
     });
   }
+
+//  FIND DOCUMENT
+async findDocument(bookId, requestId) {
+  return prisma.document.findFirst({
+    where: {
+      reference_id: parseInt(bookId),
+      reference_type: "BOOK",
+    },
+  });
 }
+
+// CREATE DOCUMENT
+async createDocument(bookId, fileData, requestId) {
+  return prisma.document.create({
+    data: {
+      reference_id: parseInt(bookId),
+      reference_type: "BOOK",
+      ...fileData,
+    },
+  });
+}
+
+//  UPDATE DOCUMENT
+async updateDocument(documentId, fileData, requestId) {
+  return prisma.document.update({
+    where: { document_id: documentId },
+    data: fileData,
+  });
+}
+}
+
+
 
 
 export default new BookRepository();
