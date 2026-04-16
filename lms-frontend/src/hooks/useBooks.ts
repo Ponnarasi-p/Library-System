@@ -1,64 +1,31 @@
 "use client";
 
-import { API } from "@/constants/api";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { getBooks, deleteBook } from "@/services/bookService";
 
-const getToken = () => localStorage.getItem("token");
+//  GET BOOKS
+export const useBooks = (params: any) => {
+  return useQuery({
+    queryKey: ["books", params], //catche key
 
-const handleResponse = async (res: Response) => {
-  const data = await res.json();
+    queryFn: () => getBooks(params), //calls service layer
 
-  if (!res.ok || data.status === "error") {
-    throw new Error(data.message || "Something went wrong");
-  }
 
-  return data;
+    placeholderData: (prev) => prev,
+  });
 };
 
-export const getBooks = async (params: any) => {
-  const query = new URLSearchParams({
-    page: String(params.page || 1),
-    limit: String(params.limit || 5),
-    search: params.search || "",
-    status: params.status || "",
-  }).toString();
+// DELETE BOOK
+export const useDeleteBook = () => {
+  const queryClient = useQueryClient();
 
-  const res = await fetch(`${API.BASE_URL}${API.BOOKS}?${query}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
+  return useMutation({
+    mutationFn: deleteBook,
+
+    onSuccess: () => {
+      queryClient.invalidateQueries({
+        queryKey: ["books"],
+      });
+    },
   });
-
-  const data = await handleResponse(res);
-
-  return {
-    data: data.data,
-    meta: data.meta,
-  };
-};
-
-export const upsertBook = async (data: FormData) => {
-  const res = await fetch(`${API.BASE_URL}${API.BOOKS}/upsert`, {
-    method: "POST",
-    headers: { Authorization: `Bearer ${getToken()}` },
-    body: data,
-  });
-
-  return handleResponse(res);
-};
-
-export const deleteBook = async (id: number) => {
-  const res = await fetch(`${API.BASE_URL}${API.BOOKS}/${id}`, {
-    method: "DELETE",
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-
-  return handleResponse(res);
-};
-
-export const getBookById = async (id: number) => {
-  const res = await fetch(`${API.BASE_URL}${API.BOOKS}/${id}`, {
-    headers: { Authorization: `Bearer ${getToken()}` },
-  });
-
-  const data = await handleResponse(res);
-
-  return data.data;
 };

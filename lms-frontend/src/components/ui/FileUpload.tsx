@@ -8,7 +8,7 @@ export default function FileUpload({
 }: any) {
   const [localPreview, setLocalPreview] = useState<string>("");
 
-  // 🔥 IMPORTANT: sync preview from parent
+  
   useEffect(() => {
     if (preview) {
       setLocalPreview(preview);
@@ -31,7 +31,7 @@ export default function FileUpload({
     <div>
       <input type="file" onChange={handleChange} />
 
-      {/* ✅ SHOW EXISTING OR NEW IMAGE */}
+      {/* SHOW EXISTING OR NEW IMAGE */}
       {localPreview && (
         <img
           src={localPreview}

@@ -32,7 +32,7 @@ export default function EditBook() {
           total_copies: data.totalCopies,
         });
 
-        // ✅ FIXED
+        
         setPreview(data.coverUrl);
       } catch {
         showSnackbar("Failed to load book", "error");
@@ -91,7 +91,7 @@ export default function EditBook() {
           }
         />
 
-        {/* ✅ IMAGE */}
+        {/* IMAGE */}
         <FileUpload preview={preview} onFileSelect={setFile} />
 
         <Button onClick={handleSubmit}>Update</Button>

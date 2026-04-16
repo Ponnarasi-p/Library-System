@@ -1,49 +1,61 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 
-import BookTable from "@/components/book/BookTable";
-import BookFilters from "@/components/book/BookFilters";
-import { getBooks } from "@/services/bookService";
-import { useSnackbar } from "@/context/SnackbarContext";
+import BooksToolbar from "@/components/book/BooksToolbar";
+import BooksTable from "@/components/book/BooksTable";
+
+import { useBooks, useDeleteBook } from "@/hooks/useBooks";
 
 import styles from "@/styles/books.module.css";
 
 export default function BooksPage() {
   const router = useRouter();
-  const { showSnackbar } = useSnackbar();
 
-  const [books, setBooks] = useState<any[]>([]);
-  const [page, setPage] = useState(1);
+  //  FILTERS
   const [search, setSearch] = useState("");
   const [status, setStatus] = useState("");
 
-  const [total, setTotal] = useState(0);
+  //  PAGINATION 
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(5);
 
-const fetchBooks = async () => {
-  try {
-    const res = await getBooks({ page, search, status });
+  //  FETCH DATA
+  const { data, isLoading } = useBooks({
+    search,
+    status,
+    page: page + 1, // backend is 1-based
+    limit: pageSize,
+  });
 
-    setBooks(res.data);
-    setTotal(res.meta.total); // ✅ IMPORTANT
-  } catch {
-    showSnackbar("Failed to fetch books", "error");
-  }
-};
+  const {mutate: deleteMutation} = useDeleteBook();
+
+  const books = data?.data || [];
+  const total = data?.meta?.total || 0;
+
+  //  RESET PAGE WHEN FILTER CHANGES
   useEffect(() => {
-  setPage(1);
-}, [search, status]);
+    setPage(0);
+  }, [search, status]);
 
+  // RESET PAGE WHEN PAGE SIZE CHANGES
   useEffect(() => {
-    fetchBooks();
-  }, [page, search, status]);
+    setPage(0);
+  }, [pageSize]);
+
+  // DELETE HANDLER
+  const handleDelete = (id: number) => {
+    if (!confirm("Delete this book?")) return;
+    deleteMutation(id);
+  };
 
   return (
     <div className={styles.container}>
       <h1 className={styles.title}>Books</h1>
 
-      <BookFilters
+      {/*  TOOLBAR */}
+      <BooksToolbar
         search={search}
         setSearch={setSearch}
         status={status}
@@ -51,14 +63,17 @@ const fetchBooks = async () => {
         onCreate={() => router.push("/books/create")}
       />
 
-     <BookTable
-  books={books}
-  page={page}
-  setPage={setPage}
-  total={total}
-  limit={5}
-  refresh={fetchBooks}
-/>
+      {/* TABLE */}
+      <BooksTable
+        rows={books}
+        rowCount={total}
+        loading={isLoading}
+        page={page}
+        pageSize={pageSize}
+        onPageChange={setPage}
+        onPageSizeChange={setPageSize}
+        onDelete={handleDelete}
+      />
     </div>
   );
 }

@@ -29,25 +29,13 @@ export const getBooks = async (params: any) => {
 
   const data = await handleResponse(res);
 
-  const list = Array.isArray(data.data)
-    ? data.data
-    : data.data?.data || [];
-
   return {
-    data: list.map((b: any) => ({
-      
-      id: b.id,
-      title: b.title,
-      author: b.author,
-      totalCopies: b.totalCopies,
-      status: b.status,
-
-      coverUrl: b.coverUrl || null,
-    })),
-    meta: data.meta || data.data?.meta || {},
+    data: data.data || [],
+    meta: data.meta || {},
   };
 };
-// CREATE / UPDATE
+
+// UPSERT
 export const upsertBook = async (data: FormData) => {
   const res = await fetch(`${API.BASE_URL}${API.BOOKS}/upsert`, {
     method: "POST",
@@ -58,7 +46,7 @@ export const upsertBook = async (data: FormData) => {
   return handleResponse(res);
 };
 
-//  DELETE
+// DELETE
 export const deleteBook = async (id: number) => {
   const res = await fetch(`${API.BASE_URL}${API.BOOKS}/${id}`, {
     method: "DELETE",
@@ -75,14 +63,6 @@ export const getBookById = async (id: number) => {
   });
 
   const data = await handleResponse(res);
-  const b = data.data;
 
-  return {
-    id: b.id,
-    title: b.title,
-    author: b.author,
-    totalCopies: b.totalCopies,
-    status: b.status,
-    coverUrl: b.coverUrl || null,
-  };
+  return data.data;
 };
